@@ -1,0 +1,25 @@
+[
+  {
+    "title": "Bug-Out Bag",
+    "items": [
+      {"text":"Water (1L per person)","done":false},
+      {"text":"Water filter / tablets","done":false},
+      {"text":"Food (2–3 days)","done":false},
+      {"text":"Fire kit (ferro rod, lighter)","done":false},
+      {"text":"Shelter (tarp, cordage)","done":false},
+      {"text":"First aid kit","done":false},
+      {"text":"Knife / multi-tool","done":false},
+      {"text":"Flashlight + batteries","done":false}
+    ]
+  },
+  {
+    "title": "Home Preparedness",
+    "items": [
+      {"text":"Water (1 gal/person/day, 3 days)","done":false},
+      {"text":"Canned food + opener","done":false},
+      {"text":"Battery radio","done":false},
+      {"text":"Power bank","done":false},
+      {"text":"Sanitation supplies","done":false}
+    ]
+  }
+]

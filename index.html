@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0b0f12" />
+  <title>Survive -- Offline</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- App header -->
+  <header class="app-header">
+    <h1>Survive</h1>
+    <p class="subtitle">The offline survival guide</p>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="tabs">
+    <button data-route="home" class="active">Home</button>
+    <button data-route="library">Library</button>
+    <button data-route="tools">Tools</button>
+    <button data-route="checklists">Checklists</button>
+    <button data-route="inventory">Inventory</button>
+  </nav>
+
+  <!-- Views -->
+  <main id="view"></main>
+
+  <!-- Templates (rendered by app.js) -->
+  <template id="tpl-home">
+    <section class="section">
+      <h2>Quick Start</h2>
+      <div class="cards">
+        <a class="card" href="#library">📚 Survival Library</a>
+        <a class="card" href="#tools">🧭 Tools</a>
+        <a class="card" href="#checklists">📝 Checklists</a>
+        <a class="card" href="#inventory">📦 Supplies</a>
+      </div>
+      <p class="muted">Everything works offline after the first load.</p>
+    </section>
+
+    <section class="section">
+      <h2>Popular Guides</h2>
+      <ul class="list" id="popularGuides"></ul>
+    </section>
+  </template>
+
+  <template id="tpl-library">
+    <section class="section">
+      <h2>Survival Library</h2>
+      <ul id="guideList" class="list"></ul>
+    </section>
+    <section id="guideReader" class="section hidden">
+      <button class="backBtn" data-back="library">← Back</button>
+      <article id="guideContent" class="markdown"></article>
+    </section>
+  </template>
+
+  <template id="tpl-tools">
+    <section class="section">
+      <h2>Tools</h2>
+      <div class="cards">
+        <a class="card" href="#tool/compass">🧭 Compass</a>
+        <a class="card" href="#tool/sos">🚨 SOS & Morse</a>
+        <a class="card" href="#tool/knots">🪢 Knot Guide</a>
+        <a class="card" href="#tool/convert">🔁 Unit Converter</a>
+        <a class="card" href="#tool/map">🗺️ Map Snapshot (Offline)</a>
+      </div>
+    </section>
+    <section id="toolView" class="section"></section>
+  </template>
+
+  <template id="tpl-checklists">
+    <section class="section">
+      <h2>Checklists</h2>
+      <ul id="checklistList" class="list"></ul>
+      <button id="addChecklistBtn" class="btn">+ New Checklist</button>
+    </section>
+    <section id="checklistEditor" class="section hidden">
+      <button class="backBtn" data-back="checklists">← Back</button>
+      <h3 id="checklistTitle"></h3>
+      <ul id="checklistItems" class="list"></ul>
+      <div class="row">
+        <input id="newItemText" placeholder="Add item…" />
+        <button id="addItemBtn" class="btn">Add</button>
+      </div>
+      <button id="exportChecklistBtn" class="btn secondary">Export as Text</button>
+    </section>
+  </template>
+
+  <template id="tpl-inventory">
+    <section class="section">
+      <h2>Supplies Inventory</h2>
+      <div class="row">
+        <input id="invName" placeholder="Item (e.g., Water)" />
+        <input id="invQty" type="number" min="0" placeholder="Qty" />
+        <input id="invCat" placeholder="Category" />
+        <button id="invAddBtn" class="btn">Add</button>
+      </div>
+      <ul id="invList" class="list"></ul>
+      <button id="invExportBtn" class="btn secondary">Export CSV</button>
+      <button id="invClearBtn" class="btn danger">Clear All</button>
+    </section>
+  </template>
+
+  <script src="app.js"></script>
+  <script> if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js'); </script>
+</body>
+</html>
