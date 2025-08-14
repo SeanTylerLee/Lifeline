@@ -1,177 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- PWA + Mobile Meta -->
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>LifeLine</title>
+  <title>LifeLine Survival Tools</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/suncalc/suncalc.js"></script>
 </head>
-<body>
+<body class="dark-theme">
 
-<header class="app-header">
-  <img src="images/lifeline-logo.png" alt="LifeLine" class="app-logo">
-</header>
+  <!-- Header -->
+  <header class="app-header">
+    <img src="images/lifeline-logo.png" alt="LifeLine" class="app-logo" />
+    <h1>LifeLine Survival Tools</h1>
+  </header>
 
-<section data-view="tools" class="view active">
-  <h2>Survival Tools</h2>
-  <div id="toolGrid" class="tool-grid">
-    <div class="tool-card" draggable="true" data-tool="compass">🧭<span>Compass</span></div>
-    <div class="tool-card" draggable="true" data-tool="converter">📏<span>Unit Converter</span></div>
-    <div class="tool-card" draggable="true" data-tool="morse">• --<span>Morse Code</span></div>
-    <div class="tool-card" draggable="true" data-tool="sos">🚨<span>SOS</span></div>
-    <div class="tool-card" draggable="true" data-tool="cpr">❤️<span>CPR Timer</span></div>
-    <div class="tool-card" draggable="true" data-tool="sun">☀️<span>Sun Times</span></div>
-    <div class="tool-card" draggable="true" data-tool="water">💧<span>Water Calc</span></div>
-    <div class="tool-card" draggable="true" data-tool="knots">🪢<span>Knots</span></div>
-    <div class="tool-card" draggable="true" data-tool="map">🗺️<span>Offline Map</span></div>
-    <div class="tool-card" draggable="true" data-tool="whistle">📢<span>Whistle</span></div>
-    <div class="tool-card" draggable="true" data-tool="flashlight">🔦<span>Flashlight</span></div>
-    <div class="tool-card" draggable="true" data-tool="weather">🌦️<span>Weather</span></div>
-    <div class="tool-card" draggable="true" data-tool="firstaid">⛑️<span>First Aid</span></div>
-    <div class="tool-card" draggable="true" data-tool="fire">🔥<span>Fire Starting</span></div>
-    <div class="tool-card" draggable="true" data-tool="shelter">🏕️<span>Shelter</span></div>
-    <div class="tool-card" draggable="true" data-tool="plants">🌿<span>Edible Plants</span></div>
-  </div>
-</section>
+  <!-- Tool Hub -->
+  <section id="tool-grid" class="tool-grid" draggable="true">
+    <!-- Drag-and-drop order will be saved -->
+    <div class="tool-card" data-tool="compass">🧭<span>Compass</span></div>
+    <div class="tool-card" data-tool="converter">📏<span>Unit Converter</span></div>
+    <div class="tool-card" data-tool="morse">•--<span>Morse Code</span></div>
+    <div class="tool-card" data-tool="sos">🚨<span>SOS</span></div>
+    <div class="tool-card" data-tool="cpr">❤️<span>CPR Timer</span></div>
+    <div class="tool-card" data-tool="sun">☀️<span>Sun Times</span></div>
+    <div class="tool-card" data-tool="water">💧<span>Water Calc</span></div>
+    <div class="tool-card" data-tool="knots">🪢<span>Knots</span></div>
+    <div class="tool-card" data-tool="map">🗺️<span>Offline Map</span></div>
+    <div class="tool-card" data-tool="whistle">📢<span>Whistle</span></div>
+    <div class="tool-card" data-tool="flashlight">🔦<span>Flashlight</span></div>
+    <div class="tool-card" data-tool="weather">🌦️<span>Weather</span></div>
+    <div class="tool-card" data-tool="firstaid">⛑️<span>First Aid</span></div>
+    <div class="tool-card" data-tool="fire">🔥<span>Fire Starting</span></div>
+    <div class="tool-card" data-tool="shelter">🏕️<span>Shelter</span></div>
+    <div class="tool-card" data-tool="plants">🌿<span>Edible Plants</span></div>
+  </section>
 
-<!-- Compass -->
-<section data-view="compass" class="view">
-  <h2>Compass</h2>
-  <button id="enableCompass">Enable Compass</button>
-  <div class="compass">
-    <div id="compassDial" class="dial"></div>
-    <div id="compassHeading" class="heading">0°</div>
-  </div>
-</section>
+  <!-- Tool Sections -->
+  <main id="tool-sections">
+    <!-- Compass -->
+    <section id="compass" class="tool-section">
+      <h2>Compass</h2>
+      <button id="enableCompass">Enable Compass</button>
+      <div class="compass">
+        <div id="compassDial" class="dial"></div>
+        <div id="compassHeading" class="heading">0°</div>
+      </div>
+    </section>
 
-<!-- Unit Converter -->
-<section data-view="converter" class="view">
-  <h2>Unit Converter</h2>
-  <select id="convertType">
-    <option value="length">Length</option>
-    <option value="weight">Weight</option>
-    <option value="temp">Temperature</option>
-  </select>
-  <input type="number" id="convertInput" placeholder="Enter value">
-  <button id="convertBtn">Convert</button>
-  <div id="convertResult"></div>
-</section>
+    <!-- Unit Converter -->
+    <section id="converter" class="tool-section">
+      <h2>Unit Converter</h2>
+      <select id="convertType">
+        <option value="length">Length</option>
+        <option value="weight">Weight</option>
+        <option value="temp">Temperature</option>
+      </select>
+      <input type="number" id="convertInput" placeholder="Enter value" />
+      <button id="convertBtn">Convert</button>
+      <div id="convertResult"></div>
+    </section>
 
-<!-- Morse Code -->
-<section data-view="morse" class="view">
-  <h2>Morse Code Translator</h2>
-  <textarea id="morseInput" placeholder="Enter text or Morse code"></textarea>
-  <button id="morseEncode">Encode</button>
-  <button id="morseDecode">Decode</button>
-  <button id="morsePlay">Play</button>
-  <div id="morseOutput"></div>
-</section>
+    <!-- Morse Code -->
+    <section id="morse" class="tool-section">
+      <h2>Morse Code Translator</h2>
+      <textarea id="morseInput" placeholder="Enter text or Morse code"></textarea>
+      <button id="morseEncode">Encode</button>
+      <button id="morseDecode">Decode</button>
+      <button id="morsePlay">Play</button>
+      <div id="morseOutput"></div>
+    </section>
 
-<!-- SOS -->
-<section data-view="sos" class="view">
-  <h2>SOS Signal</h2>
-  <button id="sosStart">Start SOS</button>
-  <button id="sosStop">Stop SOS</button>
-  <div id="sosStatus"></div>
-</section>
+    <!-- SOS -->
+    <section id="sos" class="tool-section">
+      <h2>SOS Signal</h2>
+      <button id="sosStart">Start SOS</button>
+      <button id="sosStop">Stop SOS</button>
+      <div id="sosStatus"></div>
+    </section>
 
-<!-- CPR Timer -->
-<section data-view="cpr" class="view">
-  <h2>CPR Timer</h2>
-  <button id="cprStart">Start</button>
-  <div id="cprCountdown">Ready</div>
-</section>
+    <!-- CPR Timer -->
+    <section id="cpr" class="tool-section">
+      <h2>CPR Timer</h2>
+      <button id="cprStart">Start</button>
+      <div id="cprCountdown">Ready</div>
+    </section>
 
-<!-- Sun Times -->
-<section data-view="sun" class="view">
-  <h2>Sunrise & Sunset</h2>
-  <button id="sunGet">Get Times</button>
-  <div id="sunTimes"></div>
-</section>
+    <!-- Sun Times -->
+    <section id="sun" class="tool-section">
+      <h2>Sunrise & Sunset</h2>
+      <button id="sunGet">Get Times</button>
+      <div id="sunTimes"></div>
+    </section>
 
-<!-- Water Calc -->
-<section data-view="water" class="view">
-  <h2>Water Purification Calculator</h2>
-  <input type="number" id="waterLiters" placeholder="Liters of water">
-  <button id="purifyCalc">Calculate</button>
-  <div id="purifyResult"></div>
-</section>
+    <!-- Water Calc -->
+    <section id="water" class="tool-section">
+      <h2>Water Purification Calculator</h2>
+      <input type="number" id="waterLiters" placeholder="Liters of water" />
+      <button id="purifyCalc">Calculate</button>
+      <div id="purifyResult"></div>
+    </section>
 
-<!-- Knots -->
-<section data-view="knots" class="view">
-  <h2>Knots Guide</h2>
-  <div id="knotGallery"></div>
-</section>
+    <!-- Knots -->
+    <section id="knots" class="tool-section">
+      <h2>Knots Guide</h2>
+      <div id="knotGallery"></div>
+    </section>
 
-<!-- Offline Map -->
-<section data-view="map" class="view">
-  <h2>Offline Map</h2>
-  <div id="mapContainer" style="height:300px;"></div>
-</section>
+    <!-- Offline Map -->
+    <section id="map" class="tool-section">
+      <h2>Offline Map</h2>
+      <div id="mapContainer"></div>
+    </section>
 
-<!-- Whistle -->
-<section data-view="whistle" class="view">
-  <h2>Emergency Whistle</h2>
-  <button id="whistleStart">Start</button>
-  <button id="whistleStop">Stop</button>
-</section>
+    <!-- Whistle -->
+    <section id="whistle" class="tool-section">
+      <h2>Emergency Whistle</h2>
+      <button id="whistleStart">Start</button>
+      <button id="whistleStop">Stop</button>
+    </section>
 
-<!-- Flashlight -->
-<section data-view="flashlight" class="view">
-  <h2>Flashlight</h2>
-  <button id="flashOn">Turn On</button>
-  <button id="flashOff">Turn Off</button>
-</section>
+    <!-- Flashlight -->
+    <section id="flashlight" class="tool-section">
+      <h2>Flashlight</h2>
+      <button id="flashOn">Turn On</button>
+      <button id="flashOff">Turn Off</button>
+    </section>
 
-<!-- Weather -->
-<section data-view="weather" class="view">
-  <h2>Weather</h2>
-  <button id="weatherGet">Get Weather</button>
-  <div id="weatherResult"></div>
-</section>
+    <!-- Weather -->
+    <section id="weather" class="tool-section">
+      <h2>Weather</h2>
+      <button id="weatherGet">Get Weather</button>
+      <div id="weatherResult"></div>
+    </section>
 
-<!-- First Aid -->
-<section data-view="firstaid" class="view">
-  <h2>First Aid Guide</h2>
-  <div id="firstAidContent">[Full first aid content here]</div>
-</section>
+    <!-- First Aid -->
+    <section id="firstaid" class="tool-section">
+      <h2>First Aid Guide</h2>
+      <div id="firstAidContent"></div>
+    </section>
 
-<!-- Fire -->
-<section data-view="fire" class="view">
-  <h2>Fire Starting Tips</h2>
-  <div id="fireContent">[Full fire starting guide here]</div>
-</section>
+    <!-- Fire Starting -->
+    <section id="fire" class="tool-section">
+      <h2>Fire Starting Tips</h2>
+      <div id="fireContent"></div>
+    </section>
 
-<!-- Shelter -->
-<section data-view="shelter" class="view">
-  <h2>Shelter Building Tips</h2>
-  <div id="shelterContent">[Full shelter guide here]</div>
-</section>
+    <!-- Shelter -->
+    <section id="shelter" class="tool-section">
+      <h2>Shelter Building Tips</h2>
+      <div id="shelterContent"></div>
+    </section>
 
-<!-- Plants -->
-<section data-view="plants" class="view">
-  <h2>Edible Plants Guide</h2>
-  <div id="plantsContent">[Full edible plants info here]</div>
-</section>
+    <!-- Edible Plants -->
+    <section id="plants" class="tool-section">
+      <h2>Edible Plants Guide</h2>
+      <div id="plantsContent"></div>
+    </section>
+  </main>
 
-<nav class="bottom-nav">
-  <a href="#tools">Tools</a>
-  <a href="#settings">Settings</a>
-  <a href="#about">About</a>
-</nav>
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="#top">↑ Top</a>
+    <a href="#settings">⚙ Settings</a>
+    <a href="#about">ℹ About</a>
+  </nav>
 
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(() => {
-    console.log('Service Worker registered.');
-  });
-}
-</script>
-<script src="app.js"></script>
+  <!-- Scripts -->
+  <script src="app.js"></script>
 </body>
 </html>

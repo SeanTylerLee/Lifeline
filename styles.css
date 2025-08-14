@@ -1,191 +1,156 @@
-/* ====== Survival Theme Styles for LifeLine ====== */
-
-/* Reset & Base */
+/* ==================== GLOBAL RESET ==================== */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
-  background-color: #121212;
-  color: #f1f1f1;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 60px; /* space for bottom nav */
-  background-image: url('images/dark-texture.png');
-  background-size: cover;
-  background-position: center;
+html, body {
+  height: 100%;
+  font-family: 'Courier New', monospace; /* Military style font */
+  background-color: #121212; /* Dark mode background */
+  color: #e0e0e0; /* Light gray text */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Header */
+/* ==================== HEADER ==================== */
 .app-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   background: #1b1b1b;
-  padding: 12px;
-  text-align: center;
-  border-bottom: 2px solid #2d2d2d;
+  padding: 10px;
+  border-bottom: 2px solid #2f4f2f;
 }
 
 .app-logo {
-  max-width: 180px;
-  height: auto;
+  height: 50px;
 }
 
-/* Headings */
-h2 {
-  font-size: 1.4rem;
-  color: #ffb84d; /* warm survival orange */
-  margin: 12px 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* Tool Grid */
+/* ==================== TOOL GRID ==================== */
 .tool-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 12px;
-  padding: 12px;
+  gap: 15px;
+  padding: 20px;
 }
 
 .tool-card {
-  background: #1f1f1f;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 16px;
+  background: #1e1e1e;
+  border: 2px solid #2f4f2f;
+  border-radius: 10px;
+  padding: 15px;
   text-align: center;
-  color: #f1f1f1;
+  color: #e0e0e0;
   text-decoration: none;
   font-weight: bold;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.6);
-  transition: transform 0.15s ease, background 0.2s ease;
+  font-size: 14px;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.tool-card:hover,
-.tool-card:active {
-  background: #292929;
-  transform: translateY(-2px);
+.tool-card:hover {
+  background: #2f4f2f;
+  transform: scale(1.05);
 }
 
 .tool-card span {
-  font-size: 0.85rem;
-  color: #ccc;
+  display: block;
+  margin-top: 8px;
 }
 
-/* View Sections */
+/* ==================== VIEW SECTIONS ==================== */
 .view {
   display: none;
-  padding: 16px;
+  padding: 20px;
 }
 
 .view.active {
   display: block;
 }
 
-/* Buttons */
+h2 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  color: #a8ff60; /* Military green */
+}
+
+/* ==================== BUTTONS ==================== */
 button {
-  background: #ffb84d;
-  color: #121212;
+  background: #2f4f2f;
+  color: #fff;
   border: none;
-  padding: 10px 14px;
+  padding: 10px 15px;
   border-radius: 6px;
-  font-size: 1rem;
-  font-weight: bold;
+  font-size: 14px;
   cursor: pointer;
-  margin: 6px 0;
   transition: background 0.2s ease;
 }
 
 button:hover {
-  background: #e6a73e;
+  background: #3e6b3e;
 }
 
-/* Inputs & Selects */
 input, select, textarea {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #2f4f2f;
   border-radius: 6px;
-  border: 1px solid #333;
-  background: #1a1a1a;
-  color: #f1f1f1;
-  margin: 6px 0;
+  background: #1e1e1e;
+  color: #e0e0e0;
 }
 
 textarea {
   min-height: 80px;
+  resize: vertical;
 }
 
-/* Bottom Navigation */
+/* ==================== MAP CONTAINER ==================== */
+#mapContainer {
+  height: 300px;
+  border: 2px solid #2f4f2f;
+  border-radius: 10px;
+  margin-top: 15px;
+}
+
+/* ==================== KNOT GALLERY ==================== */
+#knotGallery img {
+  width: 100%;
+  border: 2px solid #2f4f2f;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* ==================== BOTTOM NAVIGATION ==================== */
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  left: 0;
   width: 100%;
   background: #1b1b1b;
-  border-top: 2px solid #2d2d2d;
   display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  border-top: 2px solid #2f4f2f;
 }
 
 .bottom-nav a {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  color: #f1f1f1;
+  color: #a8ff60;
   text-decoration: none;
   font-weight: bold;
-  transition: background 0.2s ease;
+  font-size: 14px;
 }
 
 .bottom-nav a:hover {
-  background: #292929;
+  text-decoration: underline;
 }
 
-/* Compass Tool */
-.compass {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  border: 4px solid #ffb84d;
-  border-radius: 50%;
-  margin: 20px auto;
-  background: #1f1f1f;
-  box-shadow: inset 0 0 20px rgba(255, 184, 77, 0.3);
-}
-
-.dial {
-  width: 100%;
-  height: 100%;
-  background: url('images/compass-dial.png') no-repeat center;
-  background-size: contain;
-  transform-origin: center;
-}
-
-.heading {
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  bottom: -30px;
-  font-size: 1.2rem;
-  color: #ffb84d;
-}
-
-/* Map Container */
-#mapContainer {
-  width: 100%;
-  height: 400px;
-  border: 2px solid #333;
-  border-radius: 8px;
-}
-
-/* SOS Status */
-#sosStatus {
-  margin-top: 10px;
-  font-size: 1.1rem;
-  color: #ff4d4d;
+/* ==================== STATUS TEXT ==================== */
+#sosStatus, #cprCountdown, #convertResult, #morseOutput, #sunTimes, #purifyResult, #weatherResult {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: #1e1e1e;
+  border: 1px solid #2f4f2f;
 }
