@@ -1,48 +1,56 @@
-// LifeLine Service Worker – offline-first
-const VERSION = 'v1.0.0';
-const STATIC_CACHE = `lifeline-static-${VERSION}`;
-
-const APP_SHELL = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './manifest.json',
-  // images (add more if you include more sizes)
-  './images/lifeline-logo.png',
-  './images/lifeline-192.png',
-  './images/icon-home.png',
-  './images/icon-gear.png',
-  './images/icon-left.png',
-  './images/icon-menu.png',
-  './images/icon-back.png'
+// ===== Service Worker for LifeLine =====
+const CACHE_NAME = 'lifeline-cache-v1';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/app.js',
+  '/styles.css',
+  '/images/lifeline-logo.png',
+  'https://unpkg.com/leaflet/dist/leaflet.css',
+  'https://unpkg.com/leaflet/dist/leaflet.js',
+  'https://unpkg.com/suncalc/suncalc.js'
 ];
 
-self.addEventListener('install', e=>{
-  e.waitUntil(caches.open(STATIC_CACHE).then(c=>c.addAll(APP_SHELL)));
+// Install Event -- cache app shell
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(ASSETS);
+    })
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e=>{
+// Activate Event -- clean old caches
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys=>Promise.all(
-      keys.filter(k=>k.startsWith('lifeline-static-') && k !== STATIC_CACHE).map(k=>caches.delete(k))
-    ))
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      );
+    })
   );
   self.clients.claim();
 });
 
-// Cache-first for everything (perfect for fully offline content)
-self.addEventListener('fetch', e=>{
-  const req = e.request;
+// Fetch Event -- serve from cache first
+self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(res=>{
-      // Optional: cache new GET requests (defensive)
-      if(req.method === 'GET' && res.ok){
-        const clone = res.clone();
-        caches.open(STATIC_CACHE).then(c=>c.put(req, clone));
-      }
-      return res;
-    }).catch(()=> caches.match('./index.html')))
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        // Cache new requests (except cross-origin map tiles that change often)
+        if (e.request.url.startsWith(self.location.origin)) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => {
+        // Optional: fallback for offline
+        if (e.request.destination === 'document') {
+          return caches.match('/index.html');
+        }
+      });
+    })
   );
 });

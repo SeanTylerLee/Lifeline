@@ -1,364 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- iOS / PWA setup -->
+  <!-- Meta tags for mobile/PWA -->
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <link rel="manifest" href="manifest.json" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>LifeLine</title>
 
-  <link rel="apple-touch-icon" href="images/lifeline-192.png"/>
-  <meta name="theme-color" content="#0a0a0a"/>
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json" />
 
-  <link rel="stylesheet" href="styles.css" />
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Libraries -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/suncalc/suncalc.js"></script>
 </head>
-<body class="app">
+<body>
 
-  <!-- App header -->
-  <header class="topbar">
-    <button class="icon-btn" id="navBack" aria-label="Back">
-      <img src="images/icon-back.png" alt="" />
-    </button>
-    <div class="topbar-title">
-      <img src="images/lifeline-logo.png" alt="LifeLine" class="brand-mark"/>
-      <span>LifeLine</span>
-    </div>
-    <button class="icon-btn" id="navMenu" aria-label="Menu">
-      <img src="images/icon-menu.png" alt="" />
-    </button>
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <img src="images/lifeline-logo.png" alt="LifeLine" class="app-logo">
   </header>
 
-  <main id="viewRoot">
-    <!-- ===== Home ===== -->
-    <section data-view="home" class="view active">
-      <div class="hero">
-        <img src="images/lifeline-logo.png" alt="LifeLine" class="hero-logo"/>
-        <h1 class="hero-title">Ultimate Offline Survival</h1>
-        <p class="hero-sub">Natural disaster, man-made emergency, or the worst-case--LifeLine stays ready on your phone.</p>
-        <div class="hero-actions">
-          <a class="pill" href="#guides">Guides</a>
-          <a class="pill" href="#checklists">Checklists</a>
-          <a class="pill" href="#library">Library</a>
-          <a class="pill" href="#tools">Tools</a>
-        </div>
-      </div>
-
-      <div class="card quicks">
-        <h2>Quick Actions</h2>
-        <div class="grid-2">
-          <button class="tile" data-quick="firstAid">🩹 First Aid</button>
-          <button class="tile" data-quick="water">💧 Safe Water</button>
-          <button class="tile" data-quick="fire">🔥 Fire & Heat</button>
-          <button class="tile" data-quick="signal">📡 Signal/Rescue</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Saved (Offline)</h2>
-        <ul id="savedList" class="list"></ul>
-        <p class="muted empty-hint" id="savedEmpty">Nothing saved yet. Tap ★ on any tip to keep it here offline.</p>
-      </div>
-    </section>
-
-    <!-- ===== Guides ===== -->
-    <section data-view="guides" class="view">
-      <div class="section-header">
-        <h2>Guides</h2>
-        <input id="searchInput" class="search" type="search" placeholder="Search survival tips…" autocomplete="off"/>
-      </div>
-      <div id="activePacksBadge" class="muted" style="margin:6px 0 2px;"></div>
-      <div id="guideList" class="accordion"></div>
-    </section>
-
-    <!-- ===== Checklists ===== -->
-    <section data-view="checklists" class="view">
-      <div class="section-header">
-        <h2>Checklists</h2>
-        <button class="small ghost" id="addCustomList">+ New List</button>
-      </div>
-      <div id="checklistWrap" class="checklists"></div>
-    </section>
-
-    <!-- ===== Library ===== -->
-    <section data-view="library" class="view">
-      <div class="section-header">
-        <h2>Library</h2>
-        <p class="muted">Everything here lives on your device. No signal required.</p>
-      </div>
-      <ul id="libraryList" class="list large"></ul>
-    </section>
-
-    <!-- ===== Tools Hub ===== -->
-<section data-view="tools" class="view active">
-  <h2>Tools</h2>
-  <div class="tool-grid">
-    <a href="#tool-compass" class="tool-card">🧭<span>Compass</span></a>
-    <a href="#tool-converter" class="tool-card">📏<span>Unit Converter</span></a>
-    <a href="#tool-morse" class="tool-card">• --<span>Morse Code</span></a>
-    <a href="#tool-sos" class="tool-card">🚨<span>SOS</span></a>
-    <a href="#tool-cpr" class="tool-card">❤️<span>CPR Timer</span></a>
-    <a href="#tool-sun" class="tool-card">☀️<span>Sun Times</span></a>
-    <a href="#tool-water" class="tool-card">💧<span>Water Calc</span></a>
-    <a href="#tool-knots" class="tool-card">🪢<span>Knots</span></a>
-    <!-- Removed ICE Card since section not present -->
-  </div>
-</section>
-
-    <!-- ===== Tool: Compass ===== -->
-    <section data-view="tool-compass" class="view">
-      <div class="section-header"><h2>Compass</h2></div>
-      <div class="card center">
-        <div id="compassDial" class="compass">
-          <div id="compassNeedle" class="needle"></div>
-          <div class="north">N</div>
-        </div>
-        <div class="heading-row">
-          <div id="headingDeg" class="heading">--°</div>
-          <div id="headingCard" class="muted">Waiting…</div>
-        </div>
-        <button id="compassEnable" class="pill" style="margin-top:10px;">Enable Compass</button>
-        <p class="muted" style="margin-top:8px;">If the heading doesn’t move, tap "Enable Compass" (iOS requires a tap).</p>
-      </div>
-    </section>
-
-    <!-- ===== Tool: Converter ===== -->
-    <section data-view="tool-converter" class="view">
-      <div class="section-header"><h2>Unit Converter</h2></div>
-      <div class="card">
-        <div class="conv-row">
-          <label>Category</label>
-          <select id="convCategory">
-            <option value="length">Length</option>
-            <option value="weight">Weight</option>
-            <option value="volume">Volume</option>
-            <option value="temp">Temperature</option>
-            <option value="speed">Speed</option>
-            <option value="fuel">Fuel Economy</option>
-          </select>
-        </div>
-        <div class="conv-grid">
-          <div>
-            <label>From</label>
-            <input id="convFromVal" type="number" inputmode="decimal" value="1" />
-            <select id="convFromUnit"></select>
-          </div>
-          <div class="swap-wrap">
-            <button id="convSwap" class="pill">⇄</button>
-          </div>
-          <div>
-            <label>To</label>
-            <input id="convToVal" type="number" inputmode="decimal" value="1" />
-            <select id="convToUnit"></select>
-          </div>
-        </div>
-        <div id="convResult" class="conv-result">= 1</div>
-      </div>
-    </section>
-
-    <!-- ===== Tool: Morse ===== -->
-    <section data-view="tool-morse" class="view">
-      <div class="section-header"><h2>Morse Code</h2></div>
-      <div class="card">
-        <label>Text</label>
-        <textarea id="morseText" rows="4" placeholder="Type message…"></textarea>
-        <div class="btn-row">
-          <button id="morseEncode" class="pill">Encode →</button>
-          <button id="morseDecode" class="pill">← Decode</button>
-        </div>
-        <label>Morse</label>
-        <textarea id="morseDots" rows="4" placeholder="• = dot, -- = dash; use spaces between letters, / between words"></textarea>
-
-        <div class="controls">
-          <label>Speed (ms per dot)</label>
-          <input id="morseSpeed" type="range" min="80" max="300" value="180" />
-          <div class="toggles">
-            <label><input type="checkbox" id="morseSound" checked> Sound</label>
-            <label><input type="checkbox" id="morseScreen" checked> Screen flash</label>
-            <label><input type="checkbox" id="morseVibe"> Vibrate</label>
-          </div>
-          <div class="btn-row">
-            <button id="morsePlay" class="pill">Play</button>
-            <button id="morseStop" class="pill">Stop</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== Tool: SOS ===== -->
-    <section data-view="tool-sos" class="view">
-      <div class="section-header"><h2>SOS Beacon</h2></div>
-      <div class="card center">
-        <div class="controls">
-          <label>Speed (ms per dot)</label>
-          <input id="sosSpeed" type="range" min="80" max="300" value="160" />
-          <div class="toggles">
-            <label><input type="checkbox" id="sosSound" checked> Sound</label>
-            <label><input type="checkbox" id="sosScreen" checked> Screen flash</label>
-            <label><input type="checkbox" id="sosVibe"> Vibrate</label>
-          </div>
-        </div>
-        <button id="sosToggle" class="sos-btn">Start SOS</button>
-        <p class="muted" style="margin-top:8px;">Pattern repeats: <b>… -- -- -- …</b></p>
-      </div>
-    </section>
-    
-<!-- ===== Tool: CPR Metronome ===== -->
-<section data-view="tool-cpr" class="view">
-  <div class="section-header"><h2>CPR Metronome</h2></div>
-  <div class="card center">
-    <div class="cpr-big" id="cprBpmRead">110 BPM</div>
-    <input id="cprBpm" type="range" min="100" max="120" value="110" />
-    <div class="muted" style="margin:6px 0 10px;">Recommended: 100–120 compressions/min</div>
-    <div class="btn-row">
-      <button id="cprStart" class="pill">Start</button>
-      <button id="cprStop" class="pill">Stop</button>
+  <!-- ===== TOOLS HUB ===== -->
+  <section data-view="tools" class="view active">
+    <h2>Survival Tools</h2>
+    <div class="tool-grid">
+      <!-- Core tools -->
+      <a href="#tool-compass" class="tool-card">🧭<span>Compass</span></a>
+      <a href="#tool-converter" class="tool-card">📏<span>Unit Converter</span></a>
+      <a href="#tool-morse" class="tool-card">• --<span>Morse Code</span></a>
+      <a href="#tool-sos" class="tool-card">🚨<span>SOS</span></a>
+      <a href="#tool-cpr" class="tool-card">❤️<span>CPR Timer</span></a>
+      <a href="#tool-sun" class="tool-card">☀️<span>Sun Times</span></a>
+      <a href="#tool-water" class="tool-card">💧<span>Water Calc</span></a>
+      <a href="#tool-knots" class="tool-card">🪢<span>Knots</span></a>
+      <!-- Extra tools -->
+      <a href="#tool-map" class="tool-card">🗺️<span>Offline Map</span></a>
+      <a href="#tool-whistle" class="tool-card">📢<span>Whistle</span></a>
+      <a href="#tool-flashlight" class="tool-card">🔦<span>Flashlight</span></a>
+      <a href="#tool-weather" class="tool-card">🌦️<span>Weather</span></a>
+      <a href="#tool-firstaid" class="tool-card">⛑️<span>First Aid</span></a>
+      <a href="#tool-fire" class="tool-card">🔥<span>Fire Starting</span></a>
+      <a href="#tool-shelter" class="tool-card">🏕️<span>Shelter</span></a>
+      <a href="#tool-plants" class="tool-card">🌿<span>Edible Plants</span></a>
     </div>
-    <div class="muted">Cycle helper: 30 compressions : 2 breaths</div>
-  </div>
-</section>
+  </section>
 
-<!-- ===== Tool: Sunrise / Sunset ===== -->
-<section data-view="tool-sun" class="view">
-  <div class="section-header"><h2>Sunrise / Sunset</h2></div>
-  <div class="card">
-    <div class="sun-grid">
-      <div>
-        <label>Latitude</label>
-        <input id="sunLat" type="number" step="0.0001" placeholder="e.g., 41.256" />
-      </div>
-      <div>
-        <label>Longitude</label>
-        <input id="sunLon" type="number" step="0.0001" placeholder="-95.934" />
-      </div>
-      <div>
-        <label>Date</label>
-        <input id="sunDate" type="date" />
-      </div>
-      <div class="sun-actions">
-        <button id="sunUseGPS" class="pill small">Use GPS</button>
-        <button id="sunCalc" class="pill small">Calculate</button>
-      </div>
-    </div>
-    <div class="sun-out">
-      <div><b>Sunrise:</b> <span id="sunriseOut">--</span></div>
-      <div><b>Sunset:</b> <span id="sunsetOut">--</span></div>
-      <div><b>Daylight:</b> <span id="sunDurOut">--</span></div>
-    </div>
-    <p class="muted" style="margin-top:8px;">Works fully offline using the NOAA solar equation (approximate).</p>
-  </div>
-</section>
+  <!-- ===== TOOL SECTIONS ===== -->
 
-<!-- ===== Tool: Water Purification Calculator ===== -->
-<section data-view="tool-water" class="view">
-  <div class="section-header"><h2>Water Purification</h2></div>
-  <div class="card">
-    <div class="conv-grid">
-      <div>
-        <label>Altitude</label>
-        <input id="altValue" type="number" inputmode="decimal" placeholder="e.g., 2000" />
-        <select id="altUnit">
-          <option value="ft">ft</option>
-          <option value="m">m</option>
-        </select>
-      </div>
-      <div>
-        <label>Volume</label>
-        <input id="volValue" type="number" inputmode="decimal" placeholder="e.g., 3" />
-        <select id="volUnit">
-          <option value="L">L</option>
-          <option value="mL">mL</option>
-          <option value="gal">gal</option>
-        </select>
-      </div>
+  <section data-view="tool-compass" class="view">
+    <h2>Compass</h2>
+    <button id="enableCompass">Enable Compass</button>
+    <div class="compass">
+      <div id="compassDial" class="dial"></div>
+      <div id="compassHeading" class="heading">0°</div>
     </div>
-    <div class="btn-row" style="margin-top:10px;">
-      <button id="purifyCalc" class="pill">Calculate</button>
-    </div>
-    <div id="purifyOut" class="conv-result" style="margin-top:8px;">--</div>
-    <p class="muted" style="margin-top:8px;">
-      Guidance: rolling boil for 1 minute (3 minutes &gt; 6,500 ft / 2,000 m). Chlorine dioxide tablets: typically 1 tab per 1 L. Verify product label.
-    </p>
-  </div>
-</section>
+  </section>
 
-<!-- ===== Tool: Knot Guide ===== -->
-<section data-view="tool-knots" class="view">
-  <div class="section-header"><h2>Knot Guide</h2></div>
-  <div class="card">
-    <label>Choose a knot</label>
-    <select id="knotSelect">
-      <option value="bowline">Bowline</option>
-      <option value="clove">Clove Hitch</option>
-      <option value="square">Square Knot (Reef)</option>
+  <section data-view="tool-converter" class="view">
+    <h2>Unit Converter</h2>
+    <select id="convertType">
+      <option value="length">Length</option>
+      <option value="weight">Weight</option>
+      <option value="temp">Temperature</option>
     </select>
+    <input type="number" id="convertInput" placeholder="Enter value">
+    <button id="convertBtn">Convert</button>
+    <div id="convertResult"></div>
+  </section>
 
-    <ol id="knotSteps" class="knot-steps"></ol>
+  <section data-view="tool-morse" class="view">
+    <h2>Morse Code Translator</h2>
+    <textarea id="morseInput" placeholder="Enter text or Morse code"></textarea>
+    <button id="morseEncode">Encode</button>
+    <button id="morseDecode">Decode</button>
+    <button id="morsePlay">Play</button>
+    <div id="morseOutput"></div>
+  </section>
 
-    <p class="muted" style="margin-top:6px;">Offline quick steps. (Add photos/animations later if you want.)</p>
-  </div>
-</section>
+  <section data-view="tool-sos" class="view">
+    <h2>SOS Signal</h2>
+    <button id="sosStart">Start SOS</button>
+    <button id="sosStop">Stop SOS</button>
+    <div id="sosStatus"></div>
+  </section>
 
-    
+  <section data-view="tool-cpr" class="view">
+    <h2>CPR Timer</h2>
+    <button id="cprStart">Start</button>
+    <div id="cprCountdown">Ready</div>
+  </section>
 
-    <!-- ===== Tip Drawer ===== -->
-    <aside id="tipDrawer" class="drawer">
-      <header class="drawer-head">
-        <h3 id="tipTitle">Tip</h3>
-        <button class="icon-btn" id="closeDrawer" aria-label="Close">✕</button>
-      </header>
-      <div id="tipBody" class="drawer-body"></div>
-      <footer class="drawer-foot">
-        <button class="ghost" id="saveTip">★ Save</button>
-        <button class="ghost" id="noteTip">✎ Note</button>
-      </footer>
-    </aside>
+  <section data-view="tool-sun" class="view">
+    <h2>Sunrise & Sunset</h2>
+    <button id="sunGet">Get Times</button>
+    <div id="sunTimes"></div>
+  </section>
 
-    <!-- ===== Note Modal ===== -->
-    <dialog id="noteDialog" class="modal">
-      <form method="dialog" class="modal-card" id="noteForm">
-        <h3>Personal Note</h3>
-        <textarea id="noteInput" rows="6" placeholder="Add quick instructions, phone numbers, coordinates…"></textarea>
-        <menu class="modal-actions">
-          <button value="cancel">Cancel</button>
-          <button id="noteSaveBtn" value="default">Save</button>
-        </menu>
-      </form>
-    </dialog>
+  <section data-view="tool-water" class="view">
+    <h2>Water Purification Calculator</h2>
+    <input type="number" id="waterLiters" placeholder="Liters of water">
+    <button id="purifyCalc">Calculate</button>
+    <div id="purifyResult"></div>
+  </section>
 
-    <!-- ===== Content Packs Dialog ===== -->
-    <dialog id="packsDialog" class="modal">
-      <div class="modal-card">
-        <h3 style="margin-bottom:6px;">Content Packs</h3>
-        <p class="muted" style="margin-top:0">Toggle packs to include their tips throughout the app. Stored on-device.</p>
-        <div id="packsList"></div>
-        <menu class="modal-actions">
-          <button id="closePacksBtn">Done</button>
-        </menu>
-      </div>
-    </dialog>
-  </main>
+  <section data-view="tool-knots" class="view">
+    <h2>Knots Guide</h2>
+    <div id="knotGallery"></div>
+  </section>
 
-  <!-- Bottom nav -->
-  <nav class="bottomnav">
-    <a href="#home" class="nav-item active" data-tab="home">
-      <img src="images/icon-home.png" alt="" /><span>Home</span>
-    </a>
-    <a href="#guides" class="nav-item" data-tab="guides">
-      <img src="images/icon-left.png" alt="" /><span>Guides</span>
-    </a>
-    <a href="#checklists" class="nav-item" data-tab="checklists">
-      <img src="images/icon-gear.png" alt="" /><span>Kits</span>
-    </a>
-    <a href="#library" class="nav-item" data-tab="library">
-      <img src="images/icon-menu.png" alt="" /><span>Library</span>
-    </a>
-    <a href="#tools" class="nav-item" data-tab="tools">
-      <img src="images/icon-gear.png" alt="" /><span>Tools</span>
-    </a>
+  <section data-view="tool-map" class="view">
+    <h2>Offline Map</h2>
+    <div id="mapContainer"></div>
+  </section>
+
+  <section data-view="tool-whistle" class="view">
+    <h2>Emergency Whistle</h2>
+    <button id="whistleStart">Start</button>
+    <button id="whistleStop">Stop</button>
+  </section>
+
+  <section data-view="tool-flashlight" class="view">
+    <h2>Flashlight</h2>
+    <button id="flashOn">Turn On</button>
+    <button id="flashOff">Turn Off</button>
+  </section>
+
+  <section data-view="tool-weather" class="view">
+    <h2>Weather</h2>
+    <button id="weatherGet">Get Weather</button>
+    <div id="weatherResult"></div>
+  </section>
+
+  <section data-view="tool-firstaid" class="view">
+    <h2>First Aid Guide</h2>
+    <div id="firstAidContent">[First aid instructions will be loaded here]</div>
+  </section>
+
+  <section data-view="tool-fire" class="view">
+    <h2>Fire Starting Tips</h2>
+    <div id="fireContent">[Fire starting techniques will be loaded here]</div>
+  </section>
+
+  <section data-view="tool-shelter" class="view">
+    <h2>Shelter Building Tips</h2>
+    <div id="shelterContent">[Shelter building techniques will be loaded here]</div>
+  </section>
+
+  <section data-view="tool-plants" class="view">
+    <h2>Edible Plants Guide</h2>
+    <div id="plantsContent">[Edible plants info will be loaded here]</div>
+  </section>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="bottom-nav">
+    <a href="#tools">Tools</a>
+    <a href="#settings">Settings</a>
+    <a href="#about">About</a>
   </nav>
 
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => {
+        console.log('Service Worker registered.');
+      });
+    }
+  </script>
+
+  <!-- App Logic -->
   <script src="app.js"></script>
+
 </body>
 </html>
