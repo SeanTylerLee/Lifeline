@@ -134,3 +134,6 @@ body.app{
 .nav-item img{ width:22px; height:22px; display:block; }
 .nav-item.active{ color:var(--text); }
 .small{ font-size:12px; padding:8px 10px; border-radius:10px; }
+
+/* Packs manager list buttons keep compact spacing on small screens */
+#packsList .card { margin: 10px 0; }

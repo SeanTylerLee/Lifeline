@@ -30,7 +30,7 @@
     </button>
   </header>
 
-  <!-- Main view stack (simple hash-router) -->
+  <!-- Main view stack -->
   <main id="viewRoot">
     <!-- ===== Home (Dashboard) ===== -->
     <section data-view="home" class="view active">
@@ -68,6 +68,7 @@
         <h2>Guides</h2>
         <input id="searchInput" class="search" type="search" placeholder="Search survival tips…" autocomplete="off"/>
       </div>
+      <div id="activePacksBadge" class="muted" style="margin:6px 0 2px;"></div>
       <div id="guideList" class="accordion"></div>
     </section>
 
@@ -80,7 +81,7 @@
       <div id="checklistWrap" class="checklists"></div>
     </section>
 
-    <!-- ===== Library (all tips, downloads are local) ===== -->
+    <!-- ===== Library (all tips) ===== -->
     <section data-view="library" class="view">
       <div class="section-header">
         <h2>Library</h2>
@@ -112,6 +113,18 @@
           <button id="noteSaveBtn" value="default">Save</button>
         </menu>
       </form>
+    </dialog>
+
+    <!-- ===== Packs Manager ===== -->
+    <dialog id="packsDialog" class="modal">
+      <div class="modal-card">
+        <h3 style="margin-bottom:6px;">Content Packs</h3>
+        <p class="muted" style="margin-top:0">Toggle packs to include their tips throughout the app. Stored on-device.</p>
+        <div id="packsList"></div>
+        <menu class="modal-actions">
+          <button id="closePacksBtn">Done</button>
+        </menu>
+      </div>
     </dialog>
   </main>
 
