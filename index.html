@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- iOS / PWA setup -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <link rel="manifest" href="manifest.json" />
+  <title>LifeLine</title>
+
+  <link rel="apple-touch-icon" href="images/lifeline-192.png"/>
+  <meta name="theme-color" content="#0a0a0a"/>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="app">
+
+  <!-- App header (compact iOS style) -->
+  <header class="topbar">
+    <button class="icon-btn" id="navBack" aria-label="Back">
+      <img src="images/icon-back.png" alt="" />
+    </button>
+    <div class="topbar-title">
+      <img src="images/lifeline-logo.png" alt="LifeLine" class="brand-mark"/>
+      <span>LifeLine</span>
+    </div>
+    <button class="icon-btn" id="navMenu" aria-label="Menu">
+      <img src="images/icon-menu.png" alt="" />
+    </button>
+  </header>
+
+  <!-- Main view stack (simple hash-router) -->
+  <main id="viewRoot">
+    <!-- ===== Home (Dashboard) ===== -->
+    <section data-view="home" class="view active">
+      <div class="hero">
+        <img src="images/lifeline-logo.png" alt="LifeLine" class="hero-logo"/>
+        <h1 class="hero-title">Ultimate Offline Survival</h1>
+        <p class="hero-sub">Natural disaster, man-made emergency, or the worst-case--LifeLine stays ready on your phone.</p>
+        <div class="hero-actions">
+          <a class="pill" href="#guides">Guides</a>
+          <a class="pill" href="#checklists">Checklists</a>
+          <a class="pill" href="#library">Library</a>
+        </div>
+      </div>
+
+      <div class="card quicks">
+        <h2>Quick Actions</h2>
+        <div class="grid-2">
+          <button class="tile" data-quick="firstAid">🩹 First Aid</button>
+          <button class="tile" data-quick="water">💧 Safe Water</button>
+          <button class="tile" data-quick="fire">🔥 Fire & Heat</button>
+          <button class="tile" data-quick="signal">📡 Signal/Rescue</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Saved (Offline)</h2>
+        <ul id="savedList" class="list"></ul>
+        <p class="muted empty-hint" id="savedEmpty">Nothing saved yet. Tap ★ on any tip to keep it here offline.</p>
+      </div>
+    </section>
+
+    <!-- ===== Guides (categorized, searchable) ===== -->
+    <section data-view="guides" class="view">
+      <div class="section-header">
+        <h2>Guides</h2>
+        <input id="searchInput" class="search" type="search" placeholder="Search survival tips…" autocomplete="off"/>
+      </div>
+      <div id="guideList" class="accordion"></div>
+    </section>
+
+    <!-- ===== Checklists (Go-bag, Home kit, Vehicle) ===== -->
+    <section data-view="checklists" class="view">
+      <div class="section-header">
+        <h2>Checklists</h2>
+        <button class="small ghost" id="addCustomList">+ New List</button>
+      </div>
+      <div id="checklistWrap" class="checklists"></div>
+    </section>
+
+    <!-- ===== Library (all tips, downloads are local) ===== -->
+    <section data-view="library" class="view">
+      <div class="section-header">
+        <h2>Library</h2>
+        <p class="muted">Everything here lives on your device. No signal required.</p>
+      </div>
+      <ul id="libraryList" class="list large"></ul>
+    </section>
+
+    <!-- ===== Tip detail drawer ===== -->
+    <aside id="tipDrawer" class="drawer">
+      <header class="drawer-head">
+        <h3 id="tipTitle">Tip</h3>
+        <button class="icon-btn" id="closeDrawer" aria-label="Close">✕</button>
+      </header>
+      <div id="tipBody" class="drawer-body"></div>
+      <footer class="drawer-foot">
+        <button class="ghost" id="saveTip">★ Save</button>
+        <button class="ghost" id="noteTip">✎ Note</button>
+      </footer>
+    </aside>
+
+    <!-- ===== Note modal ===== -->
+    <dialog id="noteDialog" class="modal">
+      <form method="dialog" class="modal-card" id="noteForm">
+        <h3>Personal Note</h3>
+        <textarea id="noteInput" rows="6" placeholder="Add quick instructions, phone numbers, coordinates…"></textarea>
+        <menu class="modal-actions">
+          <button value="cancel">Cancel</button>
+          <button id="noteSaveBtn" value="default">Save</button>
+        </menu>
+      </form>
+    </dialog>
+  </main>
+
+  <!-- Bottom nav (fixed) -->
+  <nav class="bottomnav">
+    <a href="#home" class="nav-item active" data-tab="home">
+      <img src="images/icon-home.png" alt="" /><span>Home</span>
+    </a>
+    <a href="#guides" class="nav-item" data-tab="guides">
+      <img src="images/icon-left.png" alt="" /><span>Guides</span>
+    </a>
+    <a href="#checklists" class="nav-item" data-tab="checklists">
+      <img src="images/icon-gear.png" alt="" /><span>Kits</span>
+    </a>
+    <a href="#library" class="nav-item" data-tab="library">
+      <img src="images/icon-menu.png" alt="" /><span>Library</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
