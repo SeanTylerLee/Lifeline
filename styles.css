@@ -189,3 +189,56 @@ textarea {
   transform: scale(0.98);
 }
 
+
+/* Header / brand */
+.app-header{
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: #0b0b0b;          /* dark bar */
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.brand-logo{
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(248, 244, 223, 0.12)); /* subtle warm glow */
+}
+
+.brand-text{
+  display: grid;
+  line-height: 1;
+}
+
+.brand-title{
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #F7F3E1;                /* matches the logo’s warm off-white */
+  font-size: 18px;
+}
+
+.brand-sub{
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9aa0a6;                /* muted subtitle */
+}
+
+/* Larger screens */
+@media (min-width: 600px){
+  .brand-logo{ width: 46px; height: 46px; }
+  .brand-title{ font-size: 20px; }
+}
