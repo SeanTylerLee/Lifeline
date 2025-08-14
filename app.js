@@ -1,126 +1,199 @@
-/* Survive -- Offline PWA
-   SPA router + offline library + tools + checklists + inventory
-   All data stored locally, no servers. */
+/* Lifeline -- Offline PWA
+   Full app logic (no Popular Guides on Home)
+   - SPA router (#home, #library, #tools/<sub>, #checklists[/edit/<i>], #inventory)
+   - Install banner
+   - Home: live search
+   - Library: reads markdown files in /content
+   - Tools: Compass, Knots, Unit Converter, SOS Flasher
+   - Checklists: create/edit with autosave, localStorage
+   - Inventory: add/delete/export/clear, localStorage
+*/
 
-const $ = (sel, root=document) => root.querySelector(sel);
-const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+/* ---------------- Small helpers ---------------- */
+const $  = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-// ----- Router -----
-const routes = ['home','library','tools','checklists','inventory'];
-function setActiveTab(route){
-  $$('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.route===route));
+function downloadText(text, filename){
+  const blob = new Blob([text], {type:'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download=filename; a.click();
 }
-function go(routeHash){
-  const [base, sub, param] = routeHash.replace('#','').split('/');
-  const route = routes.includes(base) ? base : 'home';
-  setActiveTab(route);
+function csvEsc(s){ return `"${String(s).replace(/"/g,'""')}"`; }
 
-  switch(route){
-    case 'home': renderHome(); break;
-    case 'library': renderLibrary(sub, param); break;
-    case 'tools': renderTools(sub); break;
-    case 'checklists': renderChecklists(sub, param); break;
-    case 'inventory': renderInventory(); break;
-    default: renderHome();
+function readText(path){
+  return fetch(path).then(r=>r.ok ? r.text() : Promise.reject(new Error(`${path} not found`)));
+}
+
+/* ---------------- Install banner ---------------- */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $('#installBanner')?.classList.remove('hidden');
+});
+document.addEventListener('click', async (e)=>{
+  if(e.target?.id === 'installBtn' && deferredPrompt){
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    $('#installBanner')?.classList.add('hidden');
   }
-}
-window.addEventListener('hashchange', ()=>go(location.hash||'#home'));
-window.addEventListener('load', ()=>go(location.hash||'#home'));
+  if(e.target?.id === 'dismissInstall'){
+    $('#installBanner')?.classList.add('hidden');
+  }
+});
 
-// ----- Views -----
-function renderHome(){
-  const tpl = $('#tpl-home').content.cloneNode(true);
-  $('#view').innerHTML = '';
-  $('#view').appendChild(tpl);
-  // Popular links
-  const popular = [
-    { id:'water', title:'Find & Purify Water' },
-    { id:'shelter', title:'Build Emergency Shelter' },
-    { id:'fire', title:'Start Fire (No Lighter)' }
-  ];
-  const ul = $('#popularGuides', $('#view'));
-  popular.forEach(g=>{
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="#library/read/${g.id}">${g.title}</a>`;
-    ul.appendChild(li);
+/* ---------------- Router ---------------- */
+const ROUTES = ['home','library','tools','checklists','inventory'];
+
+function parseHash(){
+  const raw = (location.hash || '#home').slice(1);       // e.g. "tools/compass"
+  const parts = raw.split('/');                           // ["tools","compass"]
+  const route = ROUTES.includes(parts[0]) ? parts[0] : 'home';
+  const sub   = parts[1];
+  const param = parts[2];
+  return {route, sub, param};
+}
+
+function setActiveTab(route){
+  $$('.tabs [role="tab"]').forEach(btn=>{
+    btn.setAttribute('aria-selected', String(btn.dataset.route===route));
   });
 }
 
-const LIBRARY = [
-  { id:'intro', title:'Survival Mindset & Priorities' },
-  { id:'shelter', title:'Shelter: Stay Warm & Dry' },
-  { id:'fire', title:'Fire: Methods & Safety' },
-  { id:'water', title:'Water: Find, Filter, Purify' },
-  { id:'first_aid', title:'First Aid: Stabilize & Treat' },
-  { id:'navigation', title:'Navigation Without GPS' },
-  { id:'weather', title:'Read the Weather' },
-  { id:'foraging', title:'Foraging: Edible vs. Toxic' },
-  { id:'signals', title:'Signals: SOS, Ground-to-Air' },
+function render(){
+  const {route, sub, param} = parseHash();
+  setActiveTab(route);
+  const view = $('#view'); if(!view) return;
+  view.innerHTML = '';
+
+  const tpl = document.getElementById(`tpl-${route}`);
+  if(!tpl){ view.textContent = 'Template missing.'; return; }
+  view.appendChild(tpl.content.cloneNode(true));
+
+  if(route==='home') renderHome();
+  if(route==='library') renderLibrary(sub, param);
+  if(route==='tools') renderTools(sub);
+  if(route==='checklists') renderChecklists(sub, param);
+  if(route==='inventory') renderInventory();
+  view.focus();
+}
+
+window.addEventListener('hashchange', render);
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('.tabs [data-route]');
+  if(t){ location.hash = '#'+t.dataset.route; }
+});
+render();
+
+/* ---------------- Library data & markdown ---------------- */
+const TOPICS = [
+  { id:'intro',       title:'Survival Mindset & Priorities', file:'content/intro.md' },
+  { id:'first_aid',   title:'First Aid: Stabilize & Treat',  file:'content/first_aid.md' },
+  { id:'fire',        title:'Fire: Methods & Safety',         file:'content/fire.md' },
+  { id:'water',       title:'Water: Find, Filter, Purify',    file:'content/water.md' },
+  { id:'shelter',     title:'Shelter: Stay Warm & Dry',       file:'content/shelter.md' },
+  { id:'navigation',  title:'Navigation Without GPS',         file:'content/navigation.md' },
+  { id:'weather',     title:'Read the Weather',               file:'content/weather.md' },
+  { id:'foraging',    title:'Foraging: Edible vs. Toxic',     file:'content/foraging.md' },
+  { id:'signals',     title:'Signals: SOS, Ground-to-Air',    file:'content/signals.md' }
 ];
 
-async function renderLibrary(sub, param){
-  const root = $('#tpl-library').content.cloneNode(true);
-  const list = $('#guideList', root);
-  LIBRARY.forEach(g=>{
-    const li = document.createElement('li');
-    li.innerHTML = `<span>${g.title}</span> <a class="btn secondary" href="#library/read/${g.id}">Open</a>`;
-    list.appendChild(li);
+function mdToHtml(h){
+  return h
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.*)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.*)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.*)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/^- (.*)$/gm,'<li>$1</li>')
+    .replace(/\n<li>/g,'<ul><li>')
+    .replace(/<\/li>\n(?!<li>)/g,'</li></ul>\n')
+    .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\n{2,}/g,'<br/>');
+}
+
+/* ---------------- HOME ---------------- */
+function renderHome(){
+  // Live search over topics
+  const input = $('#homeSearch');
+  const list = $('#homeSearchResults');
+  if(!input || !list) return;
+
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim().toLowerCase();
+    list.innerHTML = '';
+    if(!q){ list.hidden = true; return; }
+    const found = TOPICS.filter(t => (t.title + ' ' + t.id).toLowerCase().includes(q));
+    found.forEach(t=>{
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="#library/read/${t.id}"><strong>${t.title}</strong></a>`;
+      list.appendChild(li);
+    });
+    list.hidden = found.length===0;
   });
+}
 
-  $('#view').innerHTML='';
-  $('#view').appendChild(root);
+/* ---------------- LIBRARY ---------------- */
+async function renderLibrary(sub, param){
+  const list = $('#guideList');
+  const reader = $('#guideReader');
+  const content = $('#guideContent');
 
-  if(sub==='read' && param){
-    $('#guideReader').classList.remove('hidden');
-    const md = await fetch(`./content/${param}.md`).then(r=>r.text()).catch(()=>`# Missing\nContent not found.`);
-    $('#guideContent').innerHTML = renderMarkdown(md);
-    $('[data-back="library"]').addEventListener('click', ()=>location.hash='#library');
+  // Build list
+  if(list){
+    list.innerHTML = '';
+    TOPICS.forEach(t=>{
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${t.title}</span> <a class="btn secondary" href="#library/read/${t.id}">Open</a>`;
+      list.appendChild(li);
+    });
+  }
+
+  // Open reader if requested
+  if(sub==='read' && param && reader && content){
+    reader.classList.remove('hidden');
+    const t = TOPICS.find(x=>x.id===param);
+    const raw = await readText(t?.file || '').catch(()=> '# Missing\nContent not found.');
+    content.innerHTML = mdToHtml(raw);
+    $('[data-back="library"]')?.addEventListener('click', ()=> location.hash = '#library');
   }
 }
 
+/* ---------------- TOOLS ---------------- */
 function renderTools(sub){
-  const tpl = $('#tpl-tools').content.cloneNode(true);
-  $('#view').innerHTML=''; $('#view').appendChild(tpl);
   const toolView = $('#toolView');
+  if(!toolView) return;
 
-  if(!sub){ toolView.innerHTML = `<p class="muted">Pick a tool.</p>`; return; }
+  if(!sub){
+    toolView.innerHTML = `<p class="muted">Pick a tool.</p>`;
+    return;
+  }
 
   if(sub==='compass'){
     toolView.innerHTML = `
       <h3>Compass</h3>
-      <div id="compassCard" class="card" style="text-align:center">
-        <div id="heading" style="font-size:42px; margin:10px 0">--°</div>
-        <canvas id="rose" width="260" height="260" style="max-width:260px;"></canvas>
-        <p class="muted">Move your phone to calibrate. Works best on modern devices.</p>
-      </div>`;
-    renderCompass();
-  }
-
-  if(sub==='sos'){
-    toolView.innerHTML = `
-      <h3>SOS & Morse</h3>
       <div class="card">
-        <div class="row">
-          <input id="morseInput" placeholder="Message to flash (A–Z, 0–9)" />
-          <button id="flashBtn" class="btn">Flash</button>
-        </div>
-        <div class="row">
-          <button id="sosBtn" class="btn secondary">Flash SOS</button>
-          <button id="stopFlashBtn" class="btn danger">Stop</button>
-        </div>
-        <p class="muted">If your device has a flashlight, we’ll use it; otherwise the screen will blink.</p>
+        <p class="muted">Move your phone to calibrate. Uses device orientation (alpha).</p>
+        <p style="font-size:42px;margin:.5rem 0 0"><strong id="heading">--</strong>°</p>
       </div>`;
-    initMorse();
+    if('DeviceOrientationEvent' in window){
+      window.addEventListener('deviceorientation', (e)=>{
+        const h = Math.round((e.alpha||0));
+        $('#heading').textContent = String((h+360)%360);
+      });
+    }
+    return;
   }
 
   if(sub==='knots'){
     toolView.innerHTML = `
-      <h3>Knot Guide</h3>
+      <h3>Essential Knots</h3>
       <ul class="list" id="knotList"></ul>`;
     const knots = [
-      {name:'Square Knot', steps:'Join two ropes of equal diameter.'},
-      {name:'Bowline', steps:'Fixed loop that won’t slip.'},
-      {name:'Clove Hitch', steps:'Quick tie to a post.'},
+      {name:'Square Knot', steps:'Left over right, right over left. Joins ropes.'},
+      {name:'Bowline', steps:'Loop → rabbit out → around tree → back down hole.'},
+      {name:'Clove Hitch', steps:'Two turns around post, tuck under standing part.'}
     ];
     const ul = $('#knotList');
     knots.forEach(k=>{
@@ -128,291 +201,266 @@ function renderTools(sub){
       li.innerHTML = `<div><strong>${k.name}</strong><div class="muted">${k.steps}</div></div>`;
       ul.appendChild(li);
     });
+    return;
   }
 
   if(sub==='convert'){
     toolView.innerHTML = `
-     <h3>Unit Converter</h3>
-     <div class="card">
-       <div class="row"><input id="val" type="number" placeholder="Value" />
-         <select id="conv">
+      <h3>Unit Converter</h3>
+      <div class="card">
+        <div class="row">
+          <input id="val" type="number" placeholder="Value" />
+          <select id="conv" aria-label="Conversion type">
             <option value="c2f">°C → °F</option>
             <option value="f2c">°F → °C</option>
             <option value="km2mi">km → miles</option>
             <option value="mi2km">miles → km</option>
             <option value="kg2lb">kg → lb</option>
             <option value="lb2kg">lb → kg</option>
-         </select>
-         <button id="doConv" class="btn">Convert</button>
-       </div>
-       <p id="convOut"></p>
-     </div>`;
+          </select>
+          <button id="doConv" class="btn">Convert</button>
+        </div>
+        <p id="convOut"></p>
+      </div>`;
     $('#doConv').addEventListener('click', ()=>{
       const v = parseFloat($('#val').value); const t = $('#conv').value; if(isNaN(v)) return;
-      const o = {
-        c2f: v*9/5+32, f2c:(v-32)*5/9, km2mi:v*0.621371, mi2km:v/0.621371, kg2lb:v*2.20462, lb2kg:v/2.20462
-      }[t];
-      $('#convOut').textContent = String(Math.round(o*100)/100);
+      const o = { c2f:v*9/5+32, f2c:(v-32)*5/9, km2mi:v*0.621371, mi2km:v/0.621371, kg2lb:v*2.20462, lb2kg:v/2.20462 }[t];
+      $('#convOut').textContent = String(Math.round(o*1000)/1000);
+    });
+    return;
+  }
+
+  if(sub==='sos'){
+    toolView.innerHTML = `
+      <h3>SOS Flasher</h3>
+      <div class="card">
+        <p class="muted">Flashes the screen in Morse for SOS (· · · -- -- -- · · ·). Turn brightness up.</p>
+        <div class="row">
+          <button id="startSOS" class="btn">Start</button>
+          <button id="stopSOS" class="btn secondary">Stop</button>
+        </div>
+      </div>`;
+    let playing = false, timer = null, idx = 0;
+    const seq = '...---...';              // S O S
+    const DOT = 200, DASH = 600, GAP = 200, LETTERGAP = 600;
+    function step(){
+      if(!playing){ document.body.style.background=''; return; }
+      if(idx>=seq.length){ idx=0; setTimeout(()=>step(), LETTERGAP); return; }
+      const ch = seq[idx++];
+      const dur = (ch==='.') ? DOT : DASH;
+      document.body.style.background = '#ffffff';
+      timer = setTimeout(()=>{
+        document.body.style.background = '';
+        setTimeout(step, GAP);
+      }, dur);
+    }
+    $('#startSOS').addEventListener('click', ()=>{
+      if(playing) return;
+      playing = true; idx=0; step();
+    });
+    $('#stopSOS').addEventListener('click', ()=>{
+      playing = false; clearTimeout(timer); document.body.style.background='';
+    });
+    return;
+  }
+
+  toolView.innerHTML = `<p class="muted">Tool not found.</p>`;
+}
+
+/* ---------------- CHECKLISTS ---------------- */
+const CHECKLIST_KEY = 'lifeline_checklists';
+
+function loadChecklists(){ return JSON.parse(localStorage.getItem(CHECKLIST_KEY)||'[]'); }
+function saveChecklists(v){ localStorage.setItem(CHECKLIST_KEY, JSON.stringify(v)); }
+
+function renderChecklists(sub, param){
+  const listEl = $('#checklistList');
+  const editor = $('#checklistEditor');
+
+  function paintList(){
+    const data = loadChecklists();
+    listEl.innerHTML = '';
+    if(!data.length){
+      const li = document.createElement('li');
+      li.innerHTML = `<div class="muted">No checklists yet. Tap "+ New Checklist".</div>`;
+      listEl.appendChild(li);
+    }else{
+      data.forEach((c, i)=>{
+        const remaining = c.items.filter(it=>!it.done).length;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div><strong>${c.title||'Checklist'}</strong><div class="muted">${remaining} remaining</div></div>
+            <div class="row">
+              <a class="btn secondary" href="#checklists/edit/${i}">Open</a>
+              <button class="btn danger" data-del="${i}">Delete</button>
+            </div>
+          </div>`;
+        listEl.appendChild(li);
+      });
+    }
+  }
+
+  // Base render
+  paintList();
+
+  // Delete handler
+  listEl.addEventListener('click', (e)=>{
+    const del = e.target.closest('[data-del]');
+    if(!del) return;
+    const idx = parseInt(del.dataset.del,10);
+    const data = loadChecklists();
+    data.splice(idx,1);
+    saveChecklists(data);
+    paintList();
+  });
+
+  // Add new checklist
+  $('#addChecklistBtn')?.addEventListener('click', ()=>{
+    const data = loadChecklists();
+    data.unshift({ title:'Untitled Checklist', items:[] });
+    saveChecklists(data);
+    location.hash = `#checklists/edit/0`;
+  });
+
+  // Editor mode
+  if(sub==='edit' && typeof param !== 'undefined'){
+    const i = parseInt(param,10);
+    const data = loadChecklists();
+    if(!data[i]) return;
+
+    // show editor section
+    editor.classList.remove('hidden');
+    const titleEl = $('#checklistTitle');
+    const itemsEl = $('#checklistItems');
+    const newInput = $('#newItemText');
+    const addBtn = $('#addItemBtn');
+
+    titleEl.contentEditable = 'true';
+    titleEl.textContent = data[i].title || 'Checklist';
+    itemsEl.innerHTML = '';
+
+    function paintItems(){
+      itemsEl.innerHTML = '';
+      data[i].items.forEach((it, idx)=>{
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <label class="row" style="justify-content:space-between;gap:10px">
+            <span class="row" style="gap:10px">
+              <input type="checkbox" data-toggle="${idx}" ${it.done?'checked':''}/>
+              <span>${it.text}</span>
+            </span>
+            <button class="btn danger" data-remove="${idx}">Remove</button>
+          </label>`;
+        itemsEl.appendChild(li);
+      });
+    }
+    paintItems();
+
+    // interactions
+    itemsEl.addEventListener('click', (e)=>{
+      const tog = e.target.closest('[data-toggle]');
+      const rem = e.target.closest('[data-remove]');
+      if(tog){
+        const idx = parseInt(tog.dataset.toggle,10);
+        data[i].items[idx].done = !data[i].items[idx].done;
+        saveChecklists(data);
+      }
+      if(rem){
+        const idx = parseInt(rem.dataset.remove,10);
+        data[i].items.splice(idx,1);
+        saveChecklists(data); paintItems();
+      }
+    });
+
+    addBtn?.addEventListener('click', ()=>{
+      const txt = (newInput.value||'').trim();
+      if(!txt) return;
+      data[i].items.unshift({text:txt, done:false});
+      newInput.value = '';
+      saveChecklists(data); paintItems();
+    });
+
+    // Title autosave
+    titleEl.addEventListener('input', ()=>{
+      data[i].title = titleEl.textContent.trim() || 'Checklist';
+      saveChecklists(data);
+    });
+
+    // Export
+    $('#exportChecklistBtn')?.addEventListener('click', ()=>{
+      const text = `${data[i].title}\n\n` + data[i].items.map(it=>`${it.done?'[x]':'[ ]'} ${it.text}`).join('\n');
+      downloadText(text, (data[i].title||'checklist') + '.txt');
+    });
+
+    // Back
+    $('[data-back="checklists"]')?.addEventListener('click', ()=>{
+      editor.classList.add('hidden');
+      location.hash = '#checklists';
     });
   }
-
-  if(sub==='map'){
-    toolView.innerHTML = `
-      <h3>Offline Map Snapshot</h3>
-      <div class="card">
-        <p>Load a map image (screenshot or saved map). You can pan & zoom offline.</p>
-        <input id="mapFile" type="file" accept="image/*" />
-        <div id="mapStage" style="height:320px;border:1px solid #1c232b;border-radius:12px;margin-top:10px;overflow:hidden;touch-action:pinch-zoom;"></div>
-      </div>`;
-    initMapViewer();
-  }
 }
 
-async function renderChecklists(sub, id){
-  const tpl = $('#tpl-checklists').content.cloneNode(true);
-  $('#view').innerHTML=''; $('#view').appendChild(tpl);
-
-  // Load defaults once
-  if(!localStorage.getItem('checklists')){
-    const defaults = await fetch('./data/default_checklists.json').then(r=>r.json());
-    localStorage.setItem('checklists', JSON.stringify(defaults));
-  }
-  const db = JSON.parse(localStorage.getItem('checklists')||'[]');
-  const list = $('#checklistList');
-  list.innerHTML='';
-  db.forEach((c, idx)=>{
-    const li = document.createElement('li');
-    li.innerHTML = `<span>${c.title}</span>
-      <span>
-        <button class="btn secondary" data-open="${idx}">Open</button>
-        <button class="btn danger" data-del="${idx}">Delete</button>
-      </span>`;
-    list.appendChild(li);
-  });
-  list.addEventListener('click', (e)=>{
-    const open = e.target.closest('[data-open]'); const del = e.target.closest('[data-del]');
-    if(open){ location.hash = `#checklists/edit/${open.dataset.open}`; }
-    if(del){ db.splice(parseInt(del.dataset.del),1); localStorage.setItem('checklists', JSON.stringify(db)); renderChecklists(); }
-  });
-  $('#addChecklistBtn').addEventListener('click', ()=>{
-    const title = prompt('Checklist name'); if(!title) return;
-    db.push({ title, items: [] }); localStorage.setItem('checklists', JSON.stringify(db)); renderChecklists();
-  });
-
-  if(sub==='edit' && typeof id!=='undefined'){
-    $('#checklistEditor').classList.remove('hidden');
-    const idx = parseInt(id,10); const ck = db[idx];
-    $('#checklistTitle').textContent = ck.title;
-    const ul = $('#checklistItems'); ul.innerHTML='';
-    ck.items.forEach((it,i)=> addChecklistRow(ul, it.text, it.done, i, db, idx));
-    $('#addItemBtn').onclick = ()=> {
-      const t = $('#newItemText').value.trim(); if(!t) return;
-      ck.items.push({text:t,done:false}); localStorage.setItem('checklists', JSON.stringify(db));
-      addChecklistRow(ul, t, false, ck.items.length-1, db, idx); $('#newItemText').value='';
-    };
-    $('#exportChecklistBtn').onclick = ()=>{
-      const lines = [`Checklist: ${ck.title}`, ...ck.items.map(i=>`[${i.done?'x':' '}] ${i.text}`)];
-      downloadText(lines.join('\n'), `${ck.title.replace(/\s+/g,'_')}.txt`);
-    };
-  }
-}
-
-function addChecklistRow(ul, text, done, i, db, idx){
-  const li = document.createElement('li');
-  li.innerHTML = `<label style="display:flex;gap:10px;align-items:center">
-    <input type="checkbox" ${done?'checked':''} />
-    <span>${text}</span>
-  </label>
-  <button class="btn danger" data-rm="${i}">Remove</button>`;
-  ul.appendChild(li);
-  li.querySelector('input').addEventListener('change', (e)=>{
-    db[idx].items[i].done = e.target.checked;
-    localStorage.setItem('checklists', JSON.stringify(db));
-  });
-  li.querySelector('[data-rm]').addEventListener('click', ()=>{
-    db[idx].items.splice(i,1);
-    localStorage.setItem('checklists', JSON.stringify(db));
-    li.remove();
-  });
-}
+/* ---------------- INVENTORY ---------------- */
+const INV_KEY = 'lifeline_inventory';
+function loadInv(){ return JSON.parse(localStorage.getItem(INV_KEY)||'[]'); }
+function saveInv(v){ localStorage.setItem(INV_KEY, JSON.stringify(v)); }
 
 function renderInventory(){
-  const tpl = $('#tpl-inventory').content.cloneNode(true);
-  $('#view').innerHTML=''; $('#view').appendChild(tpl);
+  const name = $('#invName'), qty = $('#invQty'), cat = $('#invCat');
+  const add = $('#invAddBtn'), list = $('#invList');
 
-  const listEl = $('#invList');
-  const items = JSON.parse(localStorage.getItem('inventory')||'[]');
-  const redraw = ()=>{
-    listEl.innerHTML='';
-    items.forEach((it, i)=>{
+  function paint(){
+    const items = loadInv();
+    list.innerHTML = '';
+    if(!items.length){
       const li = document.createElement('li');
-      li.innerHTML = `<div>
-        <strong>${it.name}</strong> <span class="muted">• ${it.qty} • ${it.cat||'General'}</span>
-      </div>
-      <span>
-        <button class="btn secondary" data-edit="${i}">Edit</button>
-        <button class="btn danger" data-del="${i}">Del</button>
-      </span>`;
-      listEl.appendChild(li);
-    });
-  };
-  redraw();
-
-  $('#invAddBtn').addEventListener('click', ()=>{
-    const name = $('#invName').value.trim();
-    const qty = parseInt($('#invQty').value||'0',10);
-    const cat = $('#invCat').value.trim();
-    if(!name) return;
-    items.push({name, qty:isNaN(qty)?0:qty, cat});
-    localStorage.setItem('inventory', JSON.stringify(items)); redraw();
-    $('#invName').value=''; $('#invQty').value=''; $('#invCat').value='';
-  });
-  listEl.addEventListener('click', (e)=>{
-    const ed = e.target.closest('[data-edit]'); const del = e.target.closest('[data-del]');
-    if(ed){
-      const i = parseInt(ed.dataset.edit,10);
-      const name = prompt('Item name', items[i].name)||items[i].name;
-      const qty = parseInt(prompt('Qty', items[i].qty)||items[i].qty,10);
-      const cat = prompt('Category', items[i].cat||'')||items[i].cat;
-      items[i]={name,qty:isNaN(qty)?items[i].qty:qty,cat};
-      localStorage.setItem('inventory', JSON.stringify(items)); redraw();
+      li.innerHTML = `<div class="muted">No items yet. Add your first piece of gear.</div>`;
+      list.appendChild(li);
+      return;
     }
-    if(del){
-      const i = parseInt(del.dataset.del,10);
-      items.splice(i,1); localStorage.setItem('inventory', JSON.stringify(items)); redraw();
-    }
-  });
-  $('#invExportBtn').addEventListener('click', ()=>{
-    const csv = ['Name,Qty,Category', ...items.map(i=>`${csvEsc(i.name)},${i.qty},${csvEsc(i.cat||'')}`)].join('\n');
-    downloadText(csv, 'inventory.csv');
-  });
-  $('#invClearBtn').addEventListener('click', ()=>{
-    if(confirm('Clear all inventory items?')){ localStorage.removeItem('inventory'); location.reload(); }
-  });
-}
-
-// ----- Tools: Compass -----
-function renderCompass(){
-  const canvas = $('#rose'); const ctx = canvas.getContext('2d');
-  function draw(angle=0){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const c = {x:canvas.width/2,y:canvas.height/2}; const r=120;
-    ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2); ctx.strokeStyle='#2c7f3a'; ctx.lineWidth=4; ctx.stroke();
-    // Needle
-    ctx.save(); ctx.translate(c.x,c.y); ctx.rotate((-angle*Math.PI/180));
-    ctx.fillStyle='#e5534b';
-    ctx.beginPath(); ctx.moveTo(0,-r+10); ctx.lineTo(8,0); ctx.lineTo(-8,0); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-  draw();
-
-  const headingEl = $('#heading');
-  const update = (deg)=>{ headingEl.textContent = `${Math.round((deg+360)%360)}°`; draw(deg); };
-
-  if('Magnetometer' in window){
-    try{
-      const sensor = new Magnetometer({frequency:10});
-      sensor.addEventListener('reading', ()=>{
-        const deg = (Math.atan2(sensor.y, sensor.x) * (180/Math.PI)) - 90;
-        update(deg);
-      });
-      sensor.start();
-    }catch{ fallbackOrientation(update); }
-  }else{
-    fallbackOrientation(update);
-  }
-}
-function fallbackOrientation(update){
-  if(window.DeviceOrientationEvent){
-    window.addEventListener('deviceorientation', (e)=>{
-      const deg = e.webkitCompassHeading ?? (e.alpha? 360 - e.alpha : 0);
-      update(deg||0);
+    items.forEach((it, idx)=>{
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div><strong>${it.name}</strong><div class="muted">${it.qty||0} • ${it.cat||'Other'}</div></div>
+          <button class="btn danger" data-del="${idx}">Delete</button>
+        </div>`;
+      list.appendChild(li);
     });
   }
-}
 
-// ----- Tools: SOS / Morse -----
-let flashInterval=null;
-function initMorse(){
-  $('#flashBtn').addEventListener('click', ()=> playMorse($('#morseInput').value || 'SOS'));
-  $('#sosBtn').addEventListener('click', ()=> playMorse('SOS'));
-  $('#stopFlashBtn').addEventListener('click', stopFlash);
-}
-const MORSE = { A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
-  '1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.','0':'-----',' ':'/'};
-async function playMorse(text){
-  stopFlash();
-  const seq = text.toUpperCase().split('').map(c=>MORSE[c]||'').join(' ');
-  const api = await torchApi(); const screen = $('body');
-  const unit=120; // ms
-  let i=0;
-  flashInterval = setInterval(async ()=>{
-    if(i>=seq.length){ stopFlash(); return; }
-    const s = seq[i++];
-    if(s==='.'||s==='-'){
-      await setFlash(true, api, screen);
-      setTimeout(()=>setFlash(false, api, screen), s==='.'?unit:unit*3);
-    }
-  }, unit*4);
-}
-function stopFlash(){ if(flashInterval){ clearInterval(flashInterval); flashInterval=null; } setFlash(false); }
-async function torchApi(){
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const track = stream.getVideoTracks()[0];
-    const cap = track.getCapabilities();
-    if(cap.torch){ return { track }; }
-  }catch{}
-  return null;
-}
-async function setFlash(on, api=null, screenEl=null){
-  if(api?.track){ try{ await api.track.applyConstraints({advanced:[{torch:!!on}]}); }catch{} }
-  if(screenEl){ screenEl.style.background = on ? '#ffffff' : ''; }
-}
+  paint();
 
-// ----- Tools: Offline map viewer -----
-function initMapViewer(){
-  const file = $('#mapFile'); const stage = $('#mapStage');
-  let img=null, scale=1, tx=0, ty=0, dragging=false, last={x:0,y:0};
-
-  file.addEventListener('change', async ()=>{
-    const f=file.files[0]; if(!f) return;
-    const url = URL.createObjectURL(f);
-    img = new Image(); img.onload=()=>{ scale=1; tx=ty=0; draw(); }; img.src=url;
+  add?.addEventListener('click', ()=>{
+    const n = (name.value||'').trim(); if(!n) return;
+    const q = Number(qty.value)||0;
+    const c = (cat.value||'Other').trim();
+    const items = loadInv();
+    items.unshift({name:n, qty:q, cat:c});
+    saveInv(items);
+    name.value=''; qty.value=''; cat.value='';
+    paint();
   });
-  stage.addEventListener('mousedown',(e)=>{ dragging=true; last={x:e.clientX,y:e.clientY}; });
-  stage.addEventListener('mouseup',()=>dragging=false);
-  stage.addEventListener('mouseleave',()=>dragging=false);
-  stage.addEventListener('mousemove',(e)=>{ if(!dragging) return; tx+=e.clientX-last.x; ty+=e.clientY-last.y; last={x:e.clientX,y:e.clientY}; draw(); });
-  stage.addEventListener('wheel',(e)=>{ e.preventDefault(); const k=e.deltaY<0?1.1:0.9; scale*=k; draw(); }, {passive:false});
 
-  function draw(){
-    stage.innerHTML=''; if(!img) return;
-    const c=document.createElement('canvas'); c.width=stage.clientWidth; c.height=stage.clientHeight; stage.appendChild(c);
-    const ctx=c.getContext('2d'); ctx.fillStyle='#0f1419'; ctx.fillRect(0,0,c.width,c.height);
-    const iw = img.naturalWidth*scale, ih=img.naturalHeight*scale;
-    const x = (c.width - iw)/2 + tx; const y=(c.height - ih)/2 + ty;
-    ctx.drawImage(img, x, y, iw, ih);
-  }
-}
+  list.addEventListener('click', (e)=>{
+    const del = e.target.closest('[data-del]');
+    if(!del) return;
+    const idx = parseInt(del.dataset.del,10);
+    const items = loadInv();
+    items.splice(idx,1); saveInv(items); paint();
+  });
 
-// ----- Utils -----
-function renderMarkdown(md){
-  // Tiny, safe markdown subset: # ## ###, **bold**, *ital*, lists, links.
-  let h = md
-    .replace(/^### (.*)$/gm,'<h3>$1</h3>')
-    .replace(/^## (.*)$/gm,'<h2>$1</h2>')
-    .replace(/^# (.*)$/gm,'<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,'<em>$1</em>')
-    .replace(/^- (.*)$/gm,'<li>$1</li>')
-    .replace(/\n<li>/g,'<ul><li>').replace(/<\/li>\n(?!<li>)/g,'</li></ul>\n')
-    .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/\n{2,}/g,'<br/>');
-  return h;
+  $('#invExportBtn')?.addEventListener('click', ()=>{
+    const rows = [['Name','Qty','Category']];
+    loadInv().forEach(i=>rows.push([i.name,i.qty,i.cat||'Other']));
+    const csv = rows.map(r=>r.map(csvEsc).join(',')).join('\n');
+    downloadText(csv, 'lifeline-inventory.csv');
+  });
+
+  $('#invClearBtn')?.addEventListener('click', ()=>{
+    if(confirm('Clear all inventory items?')){
+      saveInv([]); paint();
+    }
+  });
 }
-function downloadText(text, filename){
-  const blob = new Blob([text], {type:'text/plain'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download=filename; a.click();
-}
-function csvEsc(s){ return `"${String(s).replace(/"/g,'""')}"`; }

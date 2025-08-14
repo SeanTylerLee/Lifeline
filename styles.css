@@ -1,11 +1,12 @@
 :root {
-  --bg:#0b0f12;
-  --card:#12171c;
-  --muted:#8a98a8;
-  --text:#e6edf3;
-  --accent:#2ea043;
-  --danger:#d03d3d;
-  --radius:14px;
+  /* Color system */
+  --bg: #0b0f12;
+  --card: #12171c;
+  --muted: #8a98a8;
+  --text: #e6edf3;
+  --accent: #2ea043;
+  --danger: #d03d3d;
+  --radius: 14px;
   --shadow: 0 1px 3px rgba(0,0,0,.35);
 }
 
@@ -21,21 +22,53 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* App Header */
+/* Header */
 .app-header {
-  padding: 22px 16px;
-  text-align: center;
+  padding: 16px;
   background: linear-gradient(180deg,#0f1419,#0b0f12);
+  border-bottom: 1px solid #1c232b;
 }
-.app-header h1 {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.brand-text h1 {
   margin: 0;
   font-size: 22px;
-  letter-spacing: .5px;
 }
 .subtitle {
-  margin: .25rem 0 0;
+  margin: 2px 0 0;
   color: var(--muted);
   font-size: .9rem;
+}
+
+/* Install Banner */
+.install-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(46,160,67,0.15);
+}
+.install-banner.hidden {
+  display: none;
+}
+.install-copy {
+  display: flex;
+  flex-direction: column;
+}
+.install-actions {
+  display: flex;
+  gap: 6px;
 }
 
 /* Tabs */
@@ -56,19 +89,78 @@ body {
   border: 1px solid #1c232b;
   background: var(--card);
   color: var(--text);
+  font-weight: 600;
 }
-.tabs button.active {
-  border-color: #2c7f3a;
-  outline: 2px solid #1f5f2a;
+.tabs button[aria-selected="true"] {
+  border-color: var(--accent);
+  outline: 2px solid rgba(46,160,67,0.5);
 }
 
-/* Sections & Cards */
-.section { padding: 16px; }
+/* Sections */
+.section {
+  padding: 16px;
+}
+
+/* Hero */
+.hero {
+  padding: 20px;
+  background: linear-gradient(180deg,rgba(46,160,67,0.12),rgba(0,0,0,0) 60%);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin: 12px;
+}
+.hero-text h2 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+}
+.hero-text p {
+  margin: 0;
+}
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.qa-btn {
+  flex: 1 1 calc(50% - 10px);
+  background: var(--card);
+  border: 1px solid #1c232b;
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+.qa-btn span {
+  display: block;
+  margin-top: 4px;
+  font-size: .85rem;
+  color: var(--muted);
+}
+.badges {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+}
+.badges li {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid #1c232b;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: .85rem;
+}
+
+/* Cards */
 .cards {
   display: grid;
   grid-template-columns: repeat(2,1fr);
   gap: 12px;
-  margin: 10px 0 6px;
 }
 .card {
   display: block;
@@ -80,20 +172,22 @@ body {
   border: 1px solid #1c232b;
   box-shadow: var(--shadow);
 }
-.muted { color: var(--muted); }
+.card:hover {
+  background: #161d24;
+}
 
 /* Lists */
-.list { list-style: none; padding: 0; margin: 6px 0; }
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+}
 .list li {
   background: var(--card);
   border: 1px solid #1c232b;
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
 }
 
 /* Buttons */
@@ -105,12 +199,18 @@ body {
   padding: 10px 12px;
   cursor: pointer;
 }
-.btn.secondary { background: #2b3138; }
-.btn.danger { background: var(--danger); }
-.row { display: flex; gap: 8px; margin: 10px 0; }
+.btn.secondary {
+  background: #2b3138;
+}
+.btn.danger {
+  background: var(--danger);
+}
 
 /* Inputs */
-input, select, textarea {
+input[type="search"],
+input[type="text"],
+input[type="number"],
+select {
   background: #0f1419;
   color: var(--text);
   border: 1px solid #202832;
@@ -130,69 +230,14 @@ input, select, textarea {
   color: var(--text);
 }
 
-/* ───────── Markdown: clean, full-width, dark-theme friendly ───────── */
+/* Markdown Reader */
 .markdown {
-  display: block;
-  width: 100%;
-  max-width: none;
   padding: 12px 8px 40px;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   line-height: 1.6;
-  font-size: 1rem;
-  color: var(--text);
-  background: transparent;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-  hyphens: auto;
 }
-
-/* Headings */
 .markdown h1, .markdown h2, .markdown h3 {
   margin: 1.2em 0 .5em;
-  line-height: 1.25;
 }
-.markdown h1 { font-size: 1.6rem; color: var(--text); }
-.markdown h2 { font-size: 1.25rem; color: var(--text); }
-.markdown h3 { font-size: 1.1rem;  color: var(--text); }
-
-/* Paragraphs */
-.markdown p { margin: .75em 0; }
-
-/* Lists */
-.markdown ul, .markdown ol {
-  padding-left: 1.25rem;
-  margin: .25rem 0 .85rem;
-}
-.markdown li { margin: .35rem 0; }
-
-/* Horizontal rule */
-.markdown hr {
-  border: 0;
-  border-top: 1px solid #1f2a33;
-  margin: 1.2em 0;
-}
-
-/* Links & emphasis */
-.markdown a { color: var(--accent); text-decoration: none; }
-.markdown a:hover { text-decoration: underline; }
-.markdown strong { color: var(--text); }
-
-/* Media */
-.markdown img, .markdown video, .markdown canvas {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-/* Optional: card-style on large screens */
-@media (min-width: 920px) {
-  .markdown {
-    max-width: 800px;
-    margin: 0 auto;
-    background: #0f1419;
-    border: 1px solid #1c232b;
-    border-radius: 12px;
-    padding: 24px 28px 40px;
-  }
+.markdown a {
+  color: var(--accent);
 }
