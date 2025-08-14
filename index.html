@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Meta for mobile/PWA -->
+  <!-- PWA / mobile -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -9,106 +9,319 @@
   <title>LifeLine</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/suncalc/suncalc.js"></script>
+  <!-- Leaflet (offline after SW caches) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
-  <!-- HEADER -->
   <header class="app-header">
-    <img src="images/lifeline-logo.png" alt="LifeLine" class="app-logo">
+    <h1>LifeLine Survival Tools</h1>
   </header>
+  
+  
+  <div class="grid-actions">
+  <button id="reorderToggle">Reorder</button>
+  <button id="resetOrder">Reset</button>
+</div>
 
-  <!-- TOOLS GRID VIEW -->
-  <section id="toolsView" class="view active">
-    <h2>Survival Tools</h2>
-    <div class="tool-grid">
-      <button data-tool="compass" class="tool-card">🧭<span>Compass</span></button>
-      <button data-tool="converter" class="tool-card">📏<span>Unit Converter</span></button>
-      <button data-tool="morse" class="tool-card">• --<span>Morse Code</span></button>
-      <button data-tool="sos" class="tool-card">🚨<span>SOS</span></button>
-      <button data-tool="cpr" class="tool-card">❤️<span>CPR Timer</span></button>
-      <button data-tool="sun" class="tool-card">☀️<span>Sun Times</span></button>
-      <button data-tool="water" class="tool-card">💧<span>Water Calc</span></button>
-      <button data-tool="knots" class="tool-card">🪢<span>Knots</span></button>
-      <button data-tool="map" class="tool-card">🗺️<span>Offline Map</span></button>
-      <button data-tool="whistle" class="tool-card">📢<span>Whistle</span></button>
-      <button data-tool="flashlight" class="tool-card">🔦<span>Flashlight</span></button>
-      <button data-tool="weather" class="tool-card">🌦️<span>Weather</span></button>
-      <button data-tool="firstaid" class="tool-card">⛑️<span>First Aid</span></button>
-      <button data-tool="fire" class="tool-card">🔥<span>Fire Starting</span></button>
-      <button data-tool="shelter" class="tool-card">🏕️<span>Shelter</span></button>
-      <button data-tool="plants" class="tool-card">🌿<span>Edible Plants</span></button>
-    </div>
+  <!-- TOOL GRID (drag to reorder) -->
+  <section id="toolsGrid" class="tool-grid">
+    <!-- button ids are persisted; data-target matches section id -->
+    <button id="compass"    class="tool-card" data-target="sec-compass"   draggable="true">🧭<span>Compass</span></button>
+    <button id="converter"  class="tool-card" data-target="sec-converter" draggable="true">📏<span>Unit Converter</span></button>
+    <button id="morse"      class="tool-card" data-target="sec-morse"     draggable="true">• --<span>Morse</span></button>
+    <button id="sos"        class="tool-card" data-target="sec-sos"       draggable="true">🆘<span>SOS Beacon</span></button>
+    <button id="cpr"        class="tool-card" data-target="sec-cpr"       draggable="true">❤️<span>CPR</span></button>
+    <button id="sun"        class="tool-card" data-target="sec-sun"       draggable="true">🌅<span>Sun Times</span></button>
+    <button id="water"      class="tool-card" data-target="sec-water"     draggable="true">💧<span>Water Calc</span></button>
+    <button id="knots"      class="tool-card" data-target="sec-knots"     draggable="true">🪢<span>Knot Guide</span></button>
+    <button id="map"        class="tool-card" data-target="sec-map"       draggable="true">🗺️<span>Map</span></button>
+    <button id="whistle"    class="tool-card" data-target="sec-whistle"   draggable="true">📢<span>Whistle</span></button>
+    <button id="flashlight" class="tool-card" data-target="sec-flash"     draggable="true">🔦<span>Flashlight</span></button>
+    <button id="weather"    class="tool-card" data-target="sec-weather"   draggable="true">🌦️<span>Weather</span></button>
+    <button id="firstaid"   class="tool-card" data-target="sec-firstaid"  draggable="true">⛑️<span>First Aid</span></button>
+    <button id="fire"       class="tool-card" data-target="sec-fire"      draggable="true">🔥<span>Fire</span></button>
+    <button id="shelter"    class="tool-card" data-target="sec-shelter"   draggable="true">🏕️<span>Shelter</span></button>
+    <button id="plants"     class="tool-card" data-target="sec-plants"    draggable="true">🌿<span>Edible Plants</span></button>
   </section>
 
-  <!-- TOOL SECTIONS -->
-  <section id="tool-compass" class="view">
-    <h2>Compass</h2>
-    <button class="back-btn">⬅ Back to Tools</button>
-    <button id="enableCompass">Enable Compass</button>
-    <div class="compass">
-      <div id="compassDial" class="dial"></div>
-      <div id="compassHeading" class="heading">0°</div>
-    </div>
-  </section>
+  <main id="sectionsRoot">
 
-  <section id="tool-converter" class="view">
-    <h2>Unit Converter</h2>
-    <button class="back-btn">⬅ Back to Tools</button>
-    <select id="convertType">
-      <option value="length">Length</option>
-      <option value="weight">Weight</option>
-      <option value="temp">Temperature</option>
-    </select>
-    <input type="number" id="convertInput" placeholder="Enter value">
-    <button id="convertBtn">Convert</button>
-    <div id="convertResult"></div>
-  </section>
+    <!-- COMPASS -->
+    <section id="sec-compass" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Compass</h2>
+      </div>
+      <div class="compass">
+        <div id="compassDial" class="dial"></div>
+      </div>
+      <div class="heading-wrap">
+        <div id="headingDeg" class="heading">--°</div>
+        <div id="headingCard" class="muted">--</div>
+      </div>
+      <button id="enableCompass">Enable Compass</button>
+      <p class="muted">iOS requires a tap + permission for motion/orientation.</p>
+    </section>
 
-  <section id="tool-morse" class="view">
-    <h2>Morse Code Translator</h2>
-    <button class="back-btn">⬅ Back to Tools</button>
-    <textarea id="morseInput" placeholder="Enter text or Morse code"></textarea>
-    <button id="morseEncode">Encode</button>
-    <button id="morseDecode">Decode</button>
-    <button id="morsePlay">Play</button>
-    <div id="morseOutput"></div>
-  </section>
+    <!-- CONVERTER -->
+    <section id="sec-converter" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Unit Converter</h2>
+      </div>
+      <div class="conv-row">
+        <label>Category</label>
+        <select id="convCategory">
+          <option value="length">Length</option>
+          <option value="weight">Weight</option>
+          <option value="volume">Volume</option>
+          <option value="temp">Temperature</option>
+          <option value="speed">Speed</option>
+          <option value="fuel">Fuel Economy</option>
+        </select>
+      </div>
+      <div class="conv-grid">
+        <div>
+          <label>From</label>
+          <input id="convFromVal" type="number" inputmode="decimal" value="1"/>
+          <select id="convFromUnit"></select>
+        </div>
+        <div class="swap-wrap"><button id="convSwap">⇄</button></div>
+        <div>
+          <label>To</label>
+          <input id="convToVal" type="number" inputmode="decimal" value="1" disabled/>
+          <select id="convToUnit"></select>
+        </div>
+      </div>
+      <div id="convResult" class="result-box">= 1</div>
+    </section>
 
-  <section id="tool-sos" class="view">
-    <h2>SOS Signal</h2>
-    <button class="back-btn">⬅ Back to Tools</button>
-    <button id="sosStart">Start SOS</button>
-    <button id="sosStop">Stop SOS</button>
-    <div id="sosStatus"></div>
-  </section>
+    <!-- MORSE -->
+    <section id="sec-morse" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Morse Code</h2>
+      </div>
+      <label>Text</label>
+      <textarea id="morseText" rows="3" placeholder="Type message…"></textarea>
+      <div class="btn-row">
+        <button id="morseEncode">Encode →</button>
+        <button id="morseDecode">← Decode</button>
+      </div>
+      <label>Morse</label>
+      <textarea id="morseDots" rows="3" placeholder="• = dot, -- = dash; spaces between letters, / between words"></textarea>
+      <div class="controls">
+        <label>Speed (ms/dot)</label>
+        <input id="morseSpeed" type="range" min="80" max="300" value="180"/>
+        <label class="chk"><input type="checkbox" id="morseSound" checked> Sound</label>
+        <label class="chk"><input type="checkbox" id="morseScreen" checked> Screen flash</label>
+        <label class="chk"><input type="checkbox" id="morseVibe"> Vibrate</label>
+      </div>
+      <div class="btn-row">
+        <button id="morsePlay">Play</button>
+        <button id="morseStop">Stop</button>
+      </div>
+    </section>
 
-  <!-- Repeat same pattern for all other tools... -->
-  <!-- Example: CPR Timer -->
-  <section id="tool-cpr" class="view">
-    <h2>CPR Timer</h2>
-    <button class="back-btn">⬅ Back to Tools</button>
-    <button id="cprStart">Start</button>
-    <div id="cprCountdown">Ready</div>
-  </section>
+    <!-- SOS -->
+    <section id="sec-sos" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>SOS Beacon</h2>
+      </div>
+      <label>Speed (ms/dot)</label>
+      <input id="sosSpeed" type="range" min="80" max="300" value="160"/>
+      <div class="toggles">
+        <label class="chk"><input type="checkbox" id="sosSound" checked> Sound</label>
+        <label class="chk"><input type="checkbox" id="sosScreen" checked> Screen flash</label>
+        <label class="chk"><input type="checkbox" id="sosVibe"> Vibrate</label>
+      </div>
+      <button id="sosToggle" class="sos-btn">Start SOS</button>
+      <p class="muted">Pattern: <b>… -- -- -- …</b></p>
+    </section>
 
-  <!-- ... Add other tool sections here exactly as your current setup, just inside <section> with back button -->
+    <!-- CPR -->
+    <section id="sec-cpr" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>CPR Metronome</h2>
+      </div>
+      <div class="cpr-big" id="cprBpmRead">110 BPM</div>
+      <input id="cprBpm" type="range" min="100" max="120" value="110"/>
+      <p class="muted">Recommended: 100–120 compressions/min</p>
+      <div class="btn-row">
+        <button id="cprStart">Start</button>
+        <button id="cprStop">Stop</button>
+      </div>
+      <div class="muted">Cycle helper: 30 compressions : 2 breaths</div>
+    </section>
 
-  <!-- FOOTER NAV -->
+    <!-- SUN TIMES -->
+    <section id="sec-sun" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Sunrise / Sunset</h2>
+      </div>
+      <div class="sun-grid">
+        <div><label>Latitude</label><input id="sunLat" type="number" step="0.0001"/></div>
+        <div><label>Longitude</label><input id="sunLon" type="number" step="0.0001"/></div>
+        <div><label>Date</label><input id="sunDate" type="date"/></div>
+        <div class="sun-actions">
+          <button id="sunUseGPS" class="small">Use GPS</button>
+          <button id="sunCalc" class="small">Calculate</button>
+        </div>
+      </div>
+      <div class="sun-out">
+        <div><b>Sunrise:</b> <span id="sunriseOut">--</span></div>
+        <div><b>Sunset:</b>  <span id="sunsetOut">--</span></div>
+        <div><b>Daylight:</b> <span id="sunDurOut">--</span></div>
+      </div>
+      <p class="muted">Works offline with NOAA equation (approx.).</p>
+    </section>
+
+    <!-- WATER CALC -->
+    <section id="sec-water" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Water Purification</h2>
+      </div>
+      <div class="conv-grid">
+        <div>
+          <label>Altitude</label>
+          <input id="altValue" type="number" inputmode="decimal" placeholder="e.g., 2000"/>
+          <select id="altUnit"><option value="ft">ft</option><option value="m">m</option></select>
+        </div>
+        <div>
+          <label>Volume</label>
+          <input id="volValue" type="number" inputmode="decimal" placeholder="e.g., 3"/>
+          <select id="volUnit"><option value="L">L</option><option value="mL">mL</option><option value="gal">gal</option></select>
+        </div>
+      </div>
+      <button id="purifyCalc">Calculate</button>
+      <div id="purifyOut" class="result-box">--</div>
+      <p class="muted">Guidance: 1 min rolling boil (3 min &gt; 2,000 m). 1 chlorine dioxide tab / 1 L (check label).</p>
+    </section>
+
+    <!-- KNOTS -->
+    <section id="sec-knots" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Knot Guide</h2>
+      </div>
+      <label>Choose a knot</label>
+      <select id="knotSelect">
+        <option value="bowline">Bowline</option>
+        <option value="clove">Clove Hitch</option>
+        <option value="square">Square Knot</option>
+      </select>
+      <ol id="knotSteps" class="knot-steps"></ol>
+    </section>
+
+    <!-- MAP -->
+    <section id="sec-map" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Map</h2>
+      </div>
+      <div id="mapContainer"></div>
+      <div class="btn-row">
+        <button id="mapLocate">Locate Me</button>
+      </div>
+      <p class="muted">Tiles cache after first load (offline later).</p>
+    </section>
+
+    <!-- WHISTLE -->
+    <section id="sec-whistle" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Emergency Whistle</h2>
+      </div>
+      <div class="btn-row">
+        <button id="whistleStart">Start</button>
+        <button id="whistleStop">Stop</button>
+      </div>
+    </section>
+
+    <!-- FLASHLIGHT -->
+    <section id="sec-flash" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Flashlight</h2>
+      </div>
+      <div class="btn-row">
+        <button id="flashOn">Turn On</button>
+        <button id="flashOff">Turn Off</button>
+      </div>
+      <p class="muted">Torch requires support; screen flash always works.</p>
+    </section>
+
+    <!-- WEATHER -->
+    <section id="sec-weather" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Weather</h2>
+      </div>
+      <div class="btn-row">
+        <button id="weatherGet">Get Current Weather</button>
+      </div>
+      <div id="weatherResult" class="result-box">--</div>
+      <p class="muted">Uses Open-Meteo if online; stores last reading for offline.</p>
+    </section>
+
+    <!-- FIRST AID -->
+    <section id="sec-firstaid" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>First Aid</h2>
+      </div>
+      <div class="guide-block">
+        <h3>First Aid ABCs</h3>
+        <ol>
+          <li><b>Airway:</b> Tilt head, lift chin. Clear obstructions.</li>
+          <li><b>Breathing:</b> Look, listen, feel. Give 2 rescue breaths if not breathing.</li>
+          <li><b>Circulation:</b> Check pulse. Start compressions 100–120/min.</li>
+        </ol>
+        <p class="muted">Direct pressure for bleeding; tourniquet only for life-threatening limb bleeding.</p>
+      </div>
+      <div class="guide-block">
+        <h3>Bleeding Control</h3>
+        <p>Direct pressure 5–10 min. Pack deep wounds. Tourniquet 2–3" above wound; tighten until bleeding stops; record time.</p>
+      </div>
+    </section>
+
+    <!-- FIRE -->
+    <section id="sec-fire" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Fire Starting</h2>
+      </div>
+      <ul>
+        <li>Build on dry base; shield from wind.</li>
+        <li>Tinder → kindling → fuel.</li>
+        <li>Carry two ignition sources (lighter + ferro rod).</li>
+      </ul>
+    </section>
+
+    <!-- SHELTER -->
+    <section id="sec-shelter" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Shelter</h2>
+      </div>
+      <p>Rule of 3s: 3 hours w/out shelter. Pick site above low spots, away from dead limbs, near resources.</p>
+    </section>
+
+    <!-- PLANTS -->
+    <section id="sec-plants" class="tool-section hidden">
+      <div class="section-head">
+        <button class="back-btn">← Tools</button><h2>Edible Plants</h2>
+      </div>
+      <ul>
+        <li><b>General:</b> Avoid unknown plants. Positive ID only.</li>
+        <li><b>Energy:</b> Nuts, seeds, berries (known), fish.</li>
+        <li><b>Avoid:</b> Milky sap, bitter/almond smell, umbrella clusters (hemlock look-alikes).</li>
+      </ul>
+    </section>
+
+  </main>
+
   <nav class="bottom-nav">
-    <a href="#toolsView" id="navTools">Tools</a>
-    <a href="#settings">Settings</a>
-    <a href="#about">About</a>
+    <button id="navTools">Tools</button>
+    <button id="navSettings" disabled>Settings</button>
+    <button id="navAbout" disabled>About</button>
   </nav>
 
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(() => {
-        console.log('Service Worker registered.');
-      });
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
     }
   </script>
 </body>

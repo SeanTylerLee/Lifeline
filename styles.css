@@ -1,156 +1,191 @@
-/* ==================== GLOBAL RESET ==================== */
+/* ===== Base Reset ===== */
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 html, body {
   height: 100%;
-  font-family: 'Courier New', monospace; /* Military style font */
-  background-color: #121212; /* Dark mode background */
-  color: #e0e0e0; /* Light gray text */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #121212;
+  color: #f5f5f5;
+  overflow-x: hidden;
 }
 
-/* ==================== HEADER ==================== */
+/* ===== Header ===== */
 .app-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #1b1b1b;
-  padding: 10px;
-  border-bottom: 2px solid #2f4f2f;
+  background: #1f1f1f;
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+.app-header h1 {
+  font-size: 1.4rem;
+  color: #fff;
 }
 
-.app-logo {
-  height: 50px;
-}
-
-/* ==================== TOOL GRID ==================== */
+/* ===== Tool Grid ===== */
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 15px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 12px;
 }
-
-.tool-card {
+.tool-grid button {
   background: #1e1e1e;
-  border: 2px solid #2f4f2f;
-  border-radius: 10px;
-  padding: 15px;
-  text-align: center;
-  color: #e0e0e0;
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 14px;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.tool-card:hover {
-  background: #2f4f2f;
-  transform: scale(1.05);
-}
-
-.tool-card span {
-  display: block;
-  margin-top: 8px;
-}
-
-/* ==================== VIEW SECTIONS ==================== */
-.view {
-  display: none;
-  padding: 20px;
-}
-
-.view.active {
-  display: block;
-}
-
-h2 {
-  margin-bottom: 15px;
-  font-size: 20px;
-  color: #a8ff60; /* Military green */
-}
-
-/* ==================== BUTTONS ==================== */
-button {
-  background: #2f4f2f;
   color: #fff;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-button:hover {
-  background: #3e6b3e;
-}
-
-input, select, textarea {
-  width: 100%;
+  border: 1px solid #333;
+  border-radius: 12px;
   padding: 10px;
-  margin-top: 8px;
-  margin-bottom: 12px;
-  border: 1px solid #2f4f2f;
-  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  cursor: grab;
+  transition: background 0.2s;
+}
+.tool-grid button:active {
+  cursor: grabbing;
+}
+.tool-grid button:hover {
+  background: #272727;
+}
+
+/* ===== Tool Sections ===== */
+.tool-section {
+  padding: 16px;
+  border-bottom: 1px solid #333;
+}
+.tool-section.hidden {
+  display: none;
+}
+.tool-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #ffcc00;
+}
+
+/* ===== Compass ===== */
+.compass {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 20px auto;
+  border: 4px solid #ffcc00;
+  border-radius: 50%;
+  background: #1a1a1a;
+}
+.dial {
+  width: 100%;
+  height: 100%;
+  background: url('images/compass-dial.png') no-repeat center;
+  background-size: contain;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease-out;
+}
+.heading {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-top: 10px;
+}
+
+/* ===== Knot Gallery ===== */
+.knot-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.knot-gallery img {
+  max-width: 100%;
+  border: 2px solid #333;
+  border-radius: 8px;
   background: #1e1e1e;
-  color: #e0e0e0;
 }
 
-textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-
-/* ==================== MAP CONTAINER ==================== */
+/* ===== Map ===== */
 #mapContainer {
   height: 300px;
-  border: 2px solid #2f4f2f;
-  border-radius: 10px;
-  margin-top: 15px;
-}
-
-/* ==================== KNOT GALLERY ==================== */
-#knotGallery img {
   width: 100%;
-  border: 2px solid #2f4f2f;
+  border: 2px solid #333;
   border-radius: 8px;
-  margin-bottom: 10px;
+  margin-top: 10px;
 }
 
-/* ==================== BOTTOM NAVIGATION ==================== */
+/* ===== Buttons ===== */
+button {
+  background: #ffcc00;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin: 4px 0;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover {
+  background: #ffdb4d;
+}
+
+/* ===== Bottom Nav ===== */
 .bottom-nav {
   position: fixed;
   bottom: 0;
+  left: 0;
   width: 100%;
-  background: #1b1b1b;
+  background: #1f1f1f;
   display: flex;
-  justify-content: space-around;
-  padding: 8px 0;
-  border-top: 2px solid #2f4f2f;
+  border-top: 1px solid #333;
 }
-
-.bottom-nav a {
-  color: #a8ff60;
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.bottom-nav a:hover {
-  text-decoration: underline;
-}
-
-/* ==================== STATUS TEXT ==================== */
-#sosStatus, #cprCountdown, #convertResult, #morseOutput, #sunTimes, #purifyResult, #weatherResult {
-  margin-top: 12px;
+.bottom-nav button {
+  flex: 1;
   padding: 10px;
-  border-radius: 6px;
-  background: #1e1e1e;
-  border: 1px solid #2f4f2f;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 0.9rem;
 }
+.bottom-nav button:hover {
+  background: #272727;
+}
+
+/* ===== Forms & Inputs ===== */
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: #fff;
+}
+textarea {
+  resize: vertical;
+}
+
+/* ===== Misc ===== */
+#weatherResult, #sunTimes, #convertResult, #purifyResult, #sosStatus, #morseOutput {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  background: #1e1e1e;
+  padding: 8px;
+  border-radius: 6px;
+   
+}
+
+
+
+.grid-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+}
+
+#toolsGrid.reorder .tool-card {
+  outline: 2px dashed #ffcc00;
+  cursor: grab;
+}
+
+.tool-card.dragging {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
