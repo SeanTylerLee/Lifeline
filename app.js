@@ -1,8 +1,9 @@
-/* LifeLine – Offline Survival PWA with Content Packs
+/* LifeLine – Offline Survival PWA with Content Packs + Tools
    - Hash-based views
-   - Embedded content packs (all offline)
-   - Saved tips and personal notes in localStorage
-   - Service Worker registers automatically
+   - Embedded content packs
+   - Tools: Compass, Converter, Morse, SOS (all offline)
+   - LocalStorage for notes/saved/lists/packs
+   - Service Worker auto-register
 */
 
 // ---------- Simple router ----------
@@ -12,6 +13,8 @@ function showView(name){
   views.forEach(v => v.classList.toggle("active", v.dataset.view === name));
   tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
   location.hash = "#" + name;
+  // Stop any running audio/flash when leaving a tool
+  if (!["tool-morse","tool-sos"].includes(name)) { stopMorse(); stopSOS(); }
 }
 window.addEventListener("hashchange", () => {
   const target = (location.hash || "#home").replace("#","");
@@ -19,7 +22,7 @@ window.addEventListener("hashchange", () => {
 });
 showView((location.hash || "#home").replace("#",""));
 
-// ---------- Base Data (core tips) ----------
+// ---------- Base Tips ----------
 const CORE_TIPS = [
   { id:"first-aid-abc", group:"First Aid", tags:["bleeding","airway","breathing"],
     title:"First Aid ABCs",
@@ -28,30 +31,25 @@ const CORE_TIPS = [
       <li><b>Breathing:</b> Look, listen, feel. 2 rescue breaths if not breathing.</li>
       <li><b>Circulation:</b> Check pulse. Begin compressions 100–120/min.</li>
     </ol>
-    <p class="muted">Use clean cloth for bleeding; direct pressure > tourniquet (extremity, last resort).</p>`
-  },
+    <p class="muted">Use clean cloth for bleeding; direct pressure > tourniquet (extremity, last resort).</p>`},
   { id:"water-safe", group:"Water", tags:["purification","boil","filter"],
     title:"Make Water Safe to Drink",
     body:`<ul>
       <li><b>Boil:</b> Rolling 1 minute (3 minutes above 6,500 ft).</li>
       <li><b>Filter + Chemical:</b> 0.1–0.2μm filter, then chlorine dioxide tablets.</li>
       <li><b>Solar UV:</b> Clear PET bottle in direct sun 6 hours (SODIS method).</li>
-    </ul>`
-  },
+    </ul>`},
   { id:"signal-rescue", group:"Signal", tags:["rescue","signal","sos"],
     title:"Signal for Rescue",
     body:`<p>Rule of 3: three whistle blasts, three fires, or three mirror flashes.</p>
-         <p>Ground-to-air: giant <b>V</b> (require assistance), <b>X</b> (need medical), arrow → direction of travel.</p>`
-  },
+         <p>Ground-to-air: giant <b>V</b> (require assistance), <b>X</b> (need medical), arrow → direction of travel.</p>`},
   { id:"fire-heat", group:"Shelter/Heat", tags:["fire","warmth","hypothermia"],
     title:"Emergency Fire & Heat",
     body:`<p>Build on dry base (bark/rocks). Tinder → kindling → fuel. Shield from wind. Keep a backup: lighter + ferro rod + storm matches.</p>
-         <p>Hypothermia: remove wet clothing, warm core first (chest, neck, groin), warm, sweet drinks if conscious.</p>`
-  },
+         <p>Hypothermia: remove wet clothing, warm core first, warm sweet drinks if conscious.</p>`},
   { id:"earthquake", group:"Disasters", tags:["earthquake"],
     title:"Earthquake: Drop, Cover, Hold On",
-    body:`<p>Drop to hands/knees, Cover head/neck under sturdy furniture, Hold on until shaking stops. After shocks likely--get away from hazards, check gas leaks, text not call.</p>`
-  },
+    body:`<p>Drop to hands/knees, Cover head/neck, Hold on until shaking stops. Aftershocks likely--check gas leaks; text not call.</p>`},
   { id:"storm-kit", group:"Kits", tags:["go bag","72 hour"],
     title:"72-Hour Go-Bag Essentials",
     body:`<ul>
@@ -62,108 +60,86 @@ const CORE_TIPS = [
       <li>Tools: multi-tool, cordage, tape, knife.</li>
       <li>Comms: whistle, mirror, power bank, radio.</li>
       <li>Docs: IDs, cash, emergency contacts.</li>
-    </ul>`
-  }
+    </ul>`}
 ];
 
-// ---------- Content Packs (all offline, toggleable) ----------
-/* Each pack has: id, name, desc, tips[] (same shape as CORE_TIPS) */
+// ---------- Content Packs ----------
 const PACKS = [
-  {
-    id: "first-aid-extended",
-    name: "First Aid Extended",
-    desc: "Bleeding control, fractures, burns, shock, meds.",
-    tips: [
+  { id:"first-aid-extended", name:"First Aid Extended", desc:"Bleeding control, fractures, burns, shock, meds.",
+    tips:[
       { id:"bleeding-control", group:"First Aid", tags:["bleeding","tourniquet"],
         title:"Bleeding Control (Stop the Bleed)",
-        body:`<p>Direct pressure 5–10 min continuous. Pack deep wounds with gauze (hemostatic if available). Tourniquet 2–3 inches above wound (no joints), tighten until bleeding stops; record time.</p>`},
+        body:`<p>Direct pressure 5–10 min. Pack deep wounds with gauze (hemostatic if available). Tourniquet 2–3 inches above wound (no joints), tighten until bleeding stops; record time.</p>`},
       { id:"fractures-splint", group:"First Aid", tags:["fracture","splint"],
         title:"Splinting Fractures",
         body:`<p>Immobilize joint above & below. Pad voids. Check pulse/sensation before & after. Do not attempt reduction unless no distal pulse.</p>`},
       { id:"burns-field", group:"First Aid", tags:["burn","cooling"],
         title:"Field Care for Burns",
-        body:`<p>Stop the burn, cool with clean water 10–20 min (not ice). Cover loosely with sterile non-adherent dressing. Avoid popping blisters. Hydrate aggressively for large burns.</p>`},
+        body:`<p>Cool with clean water 10–20 min (not ice). Cover with non-adherent dressing. Hydrate for large burns.</p>`},
       { id:"shock-signs", group:"First Aid", tags:["shock"],
         title:"Recognize & Treat Shock",
-        body:`<ul><li>Pale, clammy, fast pulse, confusion.</li><li>Lay supine, elevate legs if no trauma suspicion.</li><li>Keep warm, stop bleeding, small sips if conscious.</li></ul>`}
-    ]
-  },
-  {
-    id: "disaster-playbooks",
-    name: "Disaster Playbooks",
-    desc: "Specific steps for hurricanes, wildfires, floods, blackouts.",
-    tips: [
+        body:`<ul><li>Pale, clammy, fast pulse, confusion.</li><li>Lay supine, elevate legs if no trauma.</li><li>Keep warm, stop bleeding, small sips if conscious.</li></ul>`}
+    ]},
+  { id:"disaster-playbooks", name:"Disaster Playbooks", desc:"Hurricanes, wildfires, floods, blackouts.",
+    tips:[
       { id:"hurricane-prepare", group:"Disasters", tags:["hurricane","evacuate"],
         title:"Hurricane Prep & Evac",
-        body:`<p>Fuel vehicles, fill bathtubs with water, set freezer to coldest. Evac if in surge/evac zones; otherwise shelter in interior room. Text not call.</p>`},
+        body:`<p>Fuel vehicles, fill bathtubs, set freezer to coldest. Evac if in surge zones; otherwise interior room. Text not call.</p>`},
       { id:"wildfire-ready", group:"Disasters", tags:["wildfire","smoke"],
         title:"Wildfire: Ready, Set, Go",
-        body:`<p>Pack go-bags, back car into driveway, move combustibles 30ft from home, close vents. If trapped: shelter in cleared area or inside vehicle; cover mouth with cloth.</p>`},
+        body:`<p>Pack go-bags, back car into driveway, clear combustibles 30ft from home, close vents. If trapped: shelter in cleared area or inside vehicle.</p>`},
       { id:"flood-escape", group:"Disasters", tags:["flood"],
         title:"Flood & Flash Flood",
-        body:`<p>Turn around, don’t drown. 6 inches knocks you down; 12 inches moves a car. Seek higher ground immediately; avoid canyons and dry washes.</p>`},
+        body:`<p>Turn around, don’t drown. 6\" knocks you down; 12\" moves a car. Seek higher ground immediately; avoid canyons and dry washes.</p>`},
       { id:"blackout-72", group:"Disasters", tags:["power","blackout"],
         title:"Extended Blackout",
-        body:`<p>One room living: insulate a small room, cover windows. Rotate fridge/freezer access, cook perishables first. Vent generators outdoors 20ft+ from openings.</p>`}
-    ]
-  },
-  {
-    id: "wilderness-survival",
-    name: "Wilderness Survival",
-    desc: "Navigation, shelter, water, food, animals.",
-    tips: [
+        body:`<p>One room living. Vent generators outdoors 20ft+. Cook perishables first. Manage fridge/freezer access.</p>`}
+    ]},
+  { id:"wilderness-survival", name:"Wilderness Survival", desc:"Nav, shelter, water, food, wildlife.",
+    tips:[
       { id:"shelter-priorities", group:"Shelter/Heat", tags:["shelter"],
         title:"Shelter Priorities (Rule of 3s)",
-        body:`<p>3 minutes without air, 3 hours without shelter, 3 days without water, 3 weeks without food. Site: above low spots, away from dead limbs, near resources.</p>`},
+        body:`<p>3 minutes no air, 3 hours no shelter, 3 days no water, 3 weeks no food. Choose site above low spots, away from dead limbs, near resources.</p>`},
       { id:"trap-food", group:"Food", tags:["trapping","foraging"],
         title:"Emergency Food",
-        body:`<p>Energy first: nuts, seeds, fish. Simple traps (figure-4, snare) where legal; conserve calories. Avoid unknown plants unless <b>positively identified</b>.</p>`},
+        body:`<p>Energy: nuts, seeds, fish. Simple traps where legal; conserve calories. Avoid unknown plants unless positively ID’d.</p>`},
       { id:"animal-encounters", group:"Wildlife", tags:["bears","cats","snakes"],
         title:"Animal Encounters",
-        body:`<ul><li>Bear: make yourself big, speak calmly; spray at 25–30 ft; do not run.</li><li>Cougar: maintain eye contact, back away slowly.</li><li>Snakebite: immobilize limb, no cutting/sucking; reach care.</li></ul>`}
-    ]
-  },
-  {
-    id: "urban-emergencies",
-    name: "Urban Emergencies",
-    desc: "Active threat, building fires, elevator stuck, crowd crush.",
-    tips: [
+        body:`<ul><li>Bear: make yourself big; spray at 25–30 ft; don’t run.</li><li>Cougar: eye contact; back away slowly.</li><li>Snakebite: immobilize limb; no cutting/sucking.</li></ul>`}
+    ]},
+  { id:"urban-emergencies", name:"Urban Emergencies", desc:"Active threat, building fires, elevator, crowd crush.",
+    tips:[
       { id:"active-threat", group:"Urban", tags:["run hide fight"],
         title:"Active Threat: Run • Hide • Fight",
-        body:`<p><b>Run:</b> if clear route--leave belongings, help others if you can. <b>Hide:</b> lock, blockade, silence devices. <b>Fight:</b> last resort--improvise weapons, commit decisively.</p>`},
+        body:`<p><b>Run:</b> clear route--go. <b>Hide:</b> lock, blockade, silence. <b>Fight:</b> last resort--improvise weapons, commit.</p>`},
       { id:"apartment-fire", group:"Urban", tags:["fire","smoke"],
         title:"Apartment / Hotel Fire",
-        body:`<p>Feel door with back of hand. If hot, seal room, signal at window. If cool, stay low, close doors behind you. Never use elevators during a fire.</p>`},
+        body:`<p>Feel door with back of hand. If hot: seal room, signal. If cool: stay low, close doors behind you. Don’t use elevators.</p>`},
       { id:"crowd-crush", group:"Urban", tags:["crowd"],
         title:"Crowd Crush Survival",
-        body:`<p>Hands up in front of chest (boxer stance) to protect space. Move diagonally toward edges when waves subside; avoid the ground; help others up.</p>`}
-    ]
-  },
-  {
-    id: "comms-navigation",
-    name: "Comms & Navigation",
-    desc: "Offline comms, radio basics, paper maps, field nav.",
-    tips: [
+        body:`<p>Hands up (boxer stance). Move diagonally during lulls; avoid the ground; help others up.</p>`}
+    ]},
+  { id:"comms-navigation", name:"Comms & Navigation", desc:"Offline comms, radio basics, paper maps, field nav.",
+    tips:[
       { id:"family-plan", group:"Comms", tags:["family","rally"],
         title:"Family Communication Plan",
-        body:`<p>Pick 2 rally points (local & regional). Agree on an out-of-area contact. Text format: WHO • WHERE • STATUS • NEXT. Review quarterly.</p>`},
+        body:`<p>Pick two rally points. Out-of-area contact. Text format: WHO • WHERE • STATUS • NEXT. Review quarterly.</p>`},
       { id:"radio-basics", group:"Comms", tags:["frs","gmrs","ham"],
         title:"Handheld Radio Basics",
-        body:`<p>Start with FRS/GMRS. Keep radios on channel + privacy code. Use clear text; keep transmissions &lt;10 seconds. Carry spare batteries and a paper frequency card.</p>`},
+        body:`<p>FRS/GMRS to start. Keep channel + privacy code. Clear text; &lt;10s transmissions. Carry spare batteries.</p>`},
       { id:"field-nav", group:"Navigation", tags:["map","compass"],
         title:"Map & Compass in 60 Seconds",
-        body:`<p>Orient map to terrain. Identify your position with two features (resection). Set bearing with baseplate compass, follow handrail features (ridges, streams, roads).</p>`}
-    ]
-  }
+        body:`<p>Orient map to terrain. Resection with two features. Set bearing with baseplate compass; follow handrails.</p>`}
+    ]}
 ];
 
-// ---------- Local storage helpers ----------
+// ---------- LocalStorage ----------
 const LS = {
   read:k => JSON.parse(localStorage.getItem(k) || "null"),
   write:(k,v)=> localStorage.setItem(k, JSON.stringify(v))
 };
-if(!LS.read("lifeline_saved")) LS.write("lifeline_saved", []);      // saved tip ids
-if(!LS.read("lifeline_notes")) LS.write("lifeline_notes", {});       // id -> note
+if(!LS.read("lifeline_saved")) LS.write("lifeline_saved", []);
+if(!LS.read("lifeline_notes")) LS.write("lifeline_notes", {});
 if(!LS.read("lifeline_lists")) LS.write("lifeline_lists", [
   { id:"gobag", name:"Go-Bag", items:[
     "3L water / person", "High-cal food (no-cook)", "Headlamp + batteries",
@@ -180,37 +156,31 @@ if(!LS.read("lifeline_lists")) LS.write("lifeline_lists", [
     "First aid kit", "Water + snacks", "Maps (paper)"
   ]}
 ]);
-// Enable a couple of packs by default (can change here)
 if(!LS.read("lifeline_packs_enabled")) LS.write("lifeline_packs_enabled", ["first-aid-extended","disaster-playbooks"]);
 
-// ---------- Helpers for packs ----------
 function getEnabledPacks(){
   const ids = new Set(LS.read("lifeline_packs_enabled") || []);
   return PACKS.filter(p=>ids.has(p.id));
 }
 function allTips(){
-  // Combine core + enabled packs; ensure unique IDs
   const map = new Map();
   CORE_TIPS.forEach(t=>map.set(t.id,t));
-  getEnabledPacks().forEach(pack => pack.tips.forEach(t => map.set(t.id,t)));
-  return Array.from(map.values());
+  getEnabledPacks().forEach(p=>p.tips.forEach(t=>map.set(t.id,t)));
+  return [...map.values()];
 }
 
-// ---------- Build UI ----------
+// ---------- Build UI: Guides/Library/Saved/Lists ----------
 const guideList = document.getElementById("guideList");
 const libraryList = document.getElementById("libraryList");
 const savedList = document.getElementById("savedList");
 const savedEmpty = document.getElementById("savedEmpty");
 const activePacksBadge = document.getElementById("activePacksBadge");
 
-// group tips by category
 function byGroup(tips){
   const map = {};
   tips.forEach(t => { (map[t.group] ||= []).push(t); });
   return map;
 }
-
-// render Guides accordion
 function renderGuides(filter=""){
   guideList.innerHTML = "";
   const tips = allTips();
@@ -234,13 +204,9 @@ function renderGuides(filter=""){
     details.append(summary, wrap);
     guideList.appendChild(details);
   });
-
-  // show active packs
   const enabled = getEnabledPacks().map(p=>p.name);
   activePacksBadge.textContent = enabled.length ? `Active packs: ${enabled.join(", ")}` : "No packs active.";
 }
-
-// render Library (all tips)
 function renderLibrary(){
   libraryList.innerHTML = "";
   allTips().forEach(t=>{
@@ -250,8 +216,6 @@ function renderLibrary(){
     libraryList.appendChild(li);
   });
 }
-
-// render Saved section on Home
 function renderSaved(){
   const saved = LS.read("lifeline_saved");
   savedList.innerHTML = "";
@@ -266,8 +230,6 @@ function renderSaved(){
     savedList.appendChild(li);
   });
 }
-
-// render Checklists
 function renderLists(){
   const wrap = document.getElementById("checklistWrap");
   wrap.innerHTML = "";
@@ -287,16 +249,12 @@ function renderLists(){
       const li = document.createElement("li");
       li.innerHTML = `<span class="checkmark"></span><span contenteditable="true">${txt}</span>
                       <button class="small ghost" data-act="rm-item" data-id="${list.id}" data-idx="${idx}">Remove</button>`;
-      li.querySelector(".checkmark").addEventListener("click", e=>{
-        e.currentTarget.classList.toggle("checked");
-      });
+      li.querySelector(".checkmark").addEventListener("click", e=> e.currentTarget.classList.toggle("checked"));
       ul.appendChild(li);
     });
     box.append(head, ul);
     wrap.appendChild(box);
   });
-
-  // list actions
   wrap.querySelectorAll("button[data-act]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const lists = LS.read("lifeline_lists");
@@ -315,11 +273,8 @@ function renderLists(){
     });
   });
 }
-
-// create custom list
 document.getElementById("addCustomList").addEventListener("click", ()=>{
-  const name = prompt("List name:");
-  if(!name) return;
+  const name = prompt("List name:"); if(!name) return;
   const lists = LS.read("lifeline_lists");
   lists.push({ id: "custom-"+Date.now(), name, items: [] });
   LS.write("lifeline_lists", lists);
@@ -355,7 +310,6 @@ saveBtn.addEventListener("click", ()=>{
   LS.write("lifeline_saved", [...saved]);
   renderSaved();
 });
-
 noteBtn.addEventListener("click", ()=>{
   if(!currentTip) return;
   noteInput.value = (LS.read("lifeline_notes")[currentTip.id] || "");
@@ -367,33 +321,18 @@ document.getElementById("noteSaveBtn").addEventListener("click", ()=>{
   notes[currentTip.id] = noteInput.value.trim();
   LS.write("lifeline_notes", notes);
   noteDialog.close();
-  openTip(currentTip.id); // refresh body to show note
+  openTip(currentTip.id);
 });
 
 // ---------- Search ----------
 const searchInput = document.getElementById("searchInput");
 searchInput?.addEventListener("input", e => renderGuides(e.target.value));
 
-// ---------- Quick actions on Home ----------
-document.querySelectorAll("[data-quick]").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const map = {
-      firstAid:"first-aid-abc",
-      water:"water-safe",
-      fire:"fire-heat",
-      signal:"signal-rescue",
-    };
-    openTip(map[btn.dataset.quick]);
-  });
-});
-
-// ---------- Packs Manager ----------
+// ---------- Packs Manager (via Tools hub button or top-right menu) ----------
 const packsDialog = document.getElementById("packsDialog");
 const packsList = document.getElementById("packsList");
-document.getElementById("navMenu").addEventListener("click", ()=>{
-  renderPacksManager();
-  packsDialog.showModal();
-});
+document.getElementById("openPacks")?.addEventListener("click", ()=>{ renderPacksManager(); packsDialog.showModal(); });
+document.getElementById("navMenu").addEventListener("click", ()=>{ renderPacksManager(); packsDialog.showModal(); });
 document.getElementById("closePacksBtn").addEventListener("click", ()=> packsDialog.close());
 
 function renderPacksManager(){
@@ -414,23 +353,456 @@ function renderPacksManager(){
       <div class="muted" style="margin-top:8px;font-size:12px;">${pack.tips.length} tips</div>`;
     packsList.appendChild(card);
   });
-
   packsList.querySelectorAll("button[data-pack]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const id = btn.dataset.pack;
       const set = new Set(LS.read("lifeline_packs_enabled") || []);
       if(set.has(id)) set.delete(id); else set.add(id);
       LS.write("lifeline_packs_enabled", [...set]);
-      // Re-render everything so changes take effect immediately
-      renderPacksManager();
-      renderGuides(searchInput?.value || "");
-      renderLibrary();
-      renderSaved();
+      renderPacksManager(); renderGuides(searchInput?.value || ""); renderLibrary(); renderSaved();
     });
   });
 }
 
-// ---------- Back ----------
+// ---------- Tools: Compass ----------
+const compassEnableBtn = document.getElementById("compassEnable");
+const headingDeg = document.getElementById("headingDeg");
+const headingCard = document.getElementById("headingCard");
+const needle = document.getElementById("compassNeedle");
+let compassActive = false;
+
+function cardinal(d){
+  const dirs=["N","NE","E","SE","S","SW","W","NW","N"];
+  return dirs[Math.round(d/45)];
+}
+function setHeading(deg){
+  headingDeg.textContent = `${Math.round(deg)}°`;
+  headingCard.textContent = cardinal(deg);
+  // Needle points to magnetic north: rotate opposite of device heading
+  needle.style.transform = `translate(-50%, -100%) rotate(${-deg}deg)`;
+}
+function startCompass(){
+  if(compassActive) return;
+  const handler = (e)=>{
+    let deg = null;
+    // iOS Safari gives webkitCompassHeading (0=N)
+    if (typeof e.webkitCompassHeading === "number") {
+      deg = e.webkitCompassHeading;
+    } else if (typeof e.alpha === "number") {
+      // alpha: 0 = device facing north; use 360 - alpha to convert
+      deg = 360 - e.alpha;
+    }
+    if (deg !== null) {
+      deg = (deg + 360) % 360;
+      setHeading(deg);
+    }
+  };
+  if (typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function") {
+    // iOS permission flow
+    DeviceOrientationEvent.requestPermission().then(state=>{
+      if(state === "granted"){
+        window.addEventListener("deviceorientation", handler, true);
+        compassActive = true;
+        compassEnableBtn.style.display="none";
+      }
+    }).catch(()=> alert("Compass permission was denied. Try in Safari/iOS Settings."));
+  } else if (window.DeviceOrientationEvent) {
+    window.addEventListener("deviceorientationabsolute" in window ? "deviceorientationabsolute":"deviceorientation", handler, true);
+    compassActive = true;
+    compassEnableBtn.style.display="none";
+  } else {
+    alert("Compass not supported on this device/browser.");
+  }
+}
+compassEnableBtn?.addEventListener("click", startCompass);
+
+// ---------- Tools: Converter ----------
+const units = {
+  length: { base:"m", map:{ m:1, km:1000, mi:1609.344, ft:0.3048, yd:0.9144, cm:0.01, in:0.0254 } },
+  weight: { base:"kg", map:{ kg:1, g:0.001, lb:0.45359237, oz:0.028349523125 } },
+  volume: { base:"L", map:{ L:1, mL:0.001, gal:3.785411784, "fl oz":0.0295735295625 } },
+  speed:  { base:"m/s", map:{ "m/s":1, "km/h":0.2777777778, mph:0.44704 } },
+  fuel:   { base:"km/L", map:{ "km/L":1, "L/100km":"inv", "mpg(US)":0.4251437075 } } // special for L/100km
+};
+const convCategory = document.getElementById("convCategory");
+const fromVal = document.getElementById("convFromVal");
+const toVal = document.getElementById("convToVal");
+const fromUnit = document.getElementById("convFromUnit");
+const toUnit = document.getElementById("convToUnit");
+const convResult = document.getElementById("convResult");
+document.getElementById("convSwap").addEventListener("click", ()=>{
+  const a = fromUnit.value, b = toUnit.value; toUnit.value = a; fromUnit.value = b; computeConv();
+});
+
+function fillUnits(){
+  const cat = convCategory.value;
+  fromUnit.innerHTML = ""; toUnit.innerHTML = "";
+  if(cat === "temp"){
+    ["°C","°F","K"].forEach(u=>{
+      fromUnit.add(new Option(u,u)); toUnit.add(new Option(u,u));
+    });
+  } else {
+    Object.keys(units[cat].map).forEach(u=>{
+      fromUnit.add(new Option(u,u)); toUnit.add(new Option(u,u));
+    });
+  }
+  fromUnit.selectedIndex = 0; toUnit.selectedIndex = 1;
+  computeConv();
+}
+function convertTemp(v, from, to){
+  let c; // normalize to C
+  if(from==="°C") c=v;
+  if(from==="°F") c=(v-32)*5/9;
+  if(from==="K")  c=v-273.15;
+  if(to==="°C") return c;
+  if(to==="°F") return c*9/5+32;
+  if(to==="K")  return c+273.15;
+}
+function computeConv(){
+  const cat = convCategory.value;
+  const v = parseFloat(fromVal.value || "0");
+  let out = v;
+
+  if(cat === "temp"){
+    out = convertTemp(v, fromUnit.value, toUnit.value);
+  } else if (cat === "fuel"){
+    // Special: L/100km is inverse of km/L scaled by 100
+    const f = units.fuel.map;
+    const toBase = (val, u)=>{
+      if(u==="L/100km") return 100/(val); // convert to km/L
+      if(u==="mpg(US)") return val * f["mpg(US)"]; // mpg → km/L
+      return val; // km/L
+    };
+    const fromBase = (val, u)=>{
+      if(u==="L/100km") return 100/(val);
+      if(u==="mpg(US)") return val / f["mpg(US)"];
+      return val;
+    };
+    out = fromBase(toBase(v, fromUnit.value), toUnit.value);
+  } else {
+    // Convert via base unit
+    const map = units[cat].map;
+    const base = (v * map[fromUnit.value]);    // to base
+    out = base / map[toUnit.value];            // to target
+  }
+
+  toVal.value = out;
+  convResult.textContent = `= ${Number(out).toLocaleString(undefined,{maximumFractionDigits:6})} ${toUnit.value}`;
+}
+convCategory.addEventListener("change", fillUnits);
+[fromVal, fromUnit, toUnit].forEach(el=> el.addEventListener("input", computeConv));
+fillUnits();
+
+// ---------- Tools: Morse ----------
+const MORSE = {
+  a:"•--", b:"--•••", c:"--•--•", d:"--••", e:"•", f:"••--•", g:"----•", h:"••••", i:"••", j:"•------", k:"--•--",
+  l:"•--••", m:"----", n:"--•", o:"------", p:"•----•", q:"----•--", r:"•--•", s:"•••", t:"--", u:"••--", v:"•••--",
+  w:"•----", x:"--••--", y:"--•----", z:"----••",
+  "1":"•--------","2":"••------","3":"•••----","4":"••••--","5":"•••••","6":"--••••","7":"----•••","8":"------••","9":"--------•","0":"----------",
+  ".":"•--•--•--", ",":"----••----", "?":"••----••", "/":"--••--•", "@":"•----•--•", "-":"--••••--", " ":"/"
+};
+const REVERSE = Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+const morseText = document.getElementById("morseText");
+const morseDots = document.getElementById("morseDots");
+document.getElementById("morseEncode").addEventListener("click", ()=>{
+  const msg = morseText.value.toLowerCase();
+  const out = [...msg].map(ch => MORSE[ch] || "").join(" ");
+  morseDots.value = out.trim();
+});
+document.getElementById("morseDecode").addEventListener("click", ()=>{
+  const parts = morseDots.value.trim().split(/\s+/);
+  const out = parts.map(p => REVERSE[p] ?? (p==="/" ? " " : "")).join("");
+  morseText.value = out;
+});
+
+// Morse player (sound/screen/vibe)
+let morsePlaying = false;
+let ac = null, osc = null, flashTimer = null;
+function beep(on){
+  if(!on){ if(osc){ osc.stop(); osc.disconnect(); osc=null; } return; }
+  if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  osc = ac.createOscillator(); const g = ac.createGain();
+  osc.frequency.value = 700; osc.connect(g); g.connect(ac.destination);
+  g.gain.value = 0.15; osc.start();
+}
+const flashEl = (()=>{ const d=document.createElement("div"); d.style.position="fixed"; d.style.inset="0"; d.style.background="#fff"; d.style.opacity="0"; d.style.pointerEvents="none"; d.style.transition="opacity .02s"; document.body.appendChild(d); return d; })();
+function screenFlash(on){ flashEl.style.opacity = on? "1":"0"; }
+function vibe(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
+
+function playMorse(seq, dot){
+  let i=0;
+  morsePlaying = true;
+  const useSound = document.getElementById("morseSound").checked;
+  const useScreen = document.getElementById("morseScreen").checked;
+  const useVibe = document.getElementById("morseVibe").checked;
+
+  function unitOn(ms){
+    if(useSound) beep(true);
+    if(useScreen) screenFlash(true);
+    if(useVibe) vibe(ms);
+    return new Promise(r=> setTimeout(r, ms));
+  }
+  function unitOff(ms){
+    if(useSound) beep(false);
+    if(useScreen) screenFlash(false);
+    return new Promise(r=> setTimeout(r, ms));
+  }
+
+  (async function run(){
+    const letters = seq.split(" ");
+    for(let li=0; li<letters.length && morsePlaying; li++){
+      const ch = letters[li];
+      if(ch==="/"){ await unitOff(7*dot); continue; }
+      for(let si=0; si<ch.length && morsePlaying; si++){
+        const s = ch[si];
+        await unitOn(s==="•" ? dot : 3*dot);
+        await unitOff(dot); // gap between symbols
+      }
+      await unitOff(2*dot); // already had 1 dot gap; add 2 more to make 3 between letters
+    }
+    beep(false); screenFlash(false); morsePlaying=false;
+  })();
+}
+function stopMorse(){ morsePlaying=false; beep(false); screenFlash(false); }
+
+document.getElementById("morsePlay").addEventListener("click", ()=>{
+  if(morsePlaying) return;
+  const seq = morseDots.value.trim(); if(!seq) return;
+  const dot = parseInt(document.getElementById("morseSpeed").value,10);
+  playMorse(seq, dot);
+});
+document.getElementById("morseStop").addEventListener("click", stopMorse);
+
+// ---------- Tools: SOS ----------
+let sosTimer = null, sosRunning = false;
+function runSOS(){
+  const dot = parseInt(document.getElementById("sosSpeed").value,10);
+  const useSound = document.getElementById("sosSound").checked;
+  const useScreen = document.getElementById("sosScreen").checked;
+  const useVibe = document.getElementById("sosVibe").checked;
+
+  function on(ms){
+    if(useSound) beep(true);
+    if(useScreen) screenFlash(true);
+    if(useVibe) vibe(ms);
+    return new Promise(r=> setTimeout(r, ms));
+  }
+  function off(ms){
+    if(useSound) beep(false);
+    if(useScreen) screenFlash(false);
+    return new Promise(r=> setTimeout(r, ms));
+  }
+  sosRunning = true;
+
+  (async function loop(){
+    while(sosRunning){
+      // S: •••
+      await on(dot); await off(dot);
+      await on(dot); await off(dot);
+      await on(dot); await off(3*dot);
+      // O: -- -- --
+      await on(3*dot); await off(dot);
+      await on(3*dot); await off(dot);
+      await on(3*dot); await off(3*dot);
+      // S: •••
+      await on(dot); await off(dot);
+      await on(dot); await off(dot);
+      await on(dot); await off(7*dot); // gap between words
+    }
+    beep(false); screenFlash(false);
+  })();
+}
+function stopSOS(){ sosRunning=false; beep(false); screenFlash(false); }
+document.getElementById("sosToggle").addEventListener("click", (e)=>{
+  if(sosRunning){ stopSOS(); e.target.textContent="Start SOS"; }
+  else { runSOS(); e.target.textContent="Stop SOS"; }
+});
+
+
+
+// ===== CPR Metronome =====
+let cprTimer = null, cprAudio = null, cprRunning = false;
+const cprBpm = document.getElementById("cprBpm");
+const cprBpmRead = document.getElementById("cprBpmRead");
+function cprBeep() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  if (!cprAudio) cprAudio = new AC();
+  const o = cprAudio.createOscillator();
+  const g = cprAudio.createGain();
+  o.type = "square";
+  o.frequency.value = 800;
+  g.gain.value = 0.2;
+  o.connect(g); g.connect(cprAudio.destination);
+  o.start();
+  setTimeout(()=>{ o.stop(); }, 60); // short click
+}
+function startCPR() {
+  if (cprRunning) return;
+  const bpm = parseInt(cprBpm.value,10);
+  const interval = 60000 / bpm;
+  cprRunning = true;
+  cprBeep();
+  cprTimer = setInterval(cprBeep, interval);
+}
+function stopCPR() {
+  cprRunning = false;
+  if (cprTimer) clearInterval(cprTimer);
+  cprTimer = null;
+}
+cprBpm?.addEventListener("input", ()=> { cprBpmRead.textContent = `${cprBpm.value} BPM`; });
+document.getElementById("cprStart")?.addEventListener("click", startCPR);
+document.getElementById("cprStop")?.addEventListener("click", stopCPR);
+
+
+// ===== Sunrise / Sunset =====
+// Convert degrees ↔ radians
+const d2r = d=> d*Math.PI/180, r2d = r=> r*180/Math.PI;
+// NOAA simplified sunrise equation
+function sunTimesForDate(lat, lon, dateObj){
+  // date to Julian day
+  const ms = Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate());
+  const J2000 = Date.UTC(2000,0,1,12); // 2000-01-01 12:00 UTC
+  const n = Math.floor((ms - J2000)/86400000);
+
+  // solar mean anomaly
+  const M = d2r((357.5291 + 0.98560028 * n) % 360);
+  // equation of center
+  const C = d2r((1.9148 * Math.sin(M)) + (0.0200 * Math.sin(2*M)) + (0.0003 * Math.sin(3*M)));
+  // ecliptic longitude
+  const λ = (M + C + d2r(102.9372) + Math.PI) % (2*Math.PI);
+  // solar transit (approx)
+  const Jtransit = 2451545 + n + 0.0053*Math.sin(M) - 0.0069*Math.sin(2*λ);
+
+  // declination of sun
+  const δ = Math.asin(Math.sin(λ) * Math.sin(d2r(23.44)));
+  const φ = d2r(lat);
+  const cosH = (Math.sin(d2r(-0.83)) - Math.sin(φ)*Math.sin(δ)) / (Math.cos(φ)*Math.cos(δ));
+  if (cosH < -1 || cosH > 1) return null; // polar day/night
+
+  const H = Math.acos(cosH);
+  const Jrise = Jtransit - r2d(H)/360;
+  const Jset  = Jtransit + r2d(H)/360;
+
+  function jdToDate(jd){
+    const unix = (jd - 2440587.5) * 86400000;
+    return new Date(unix);
+  }
+  return { sunrise: jdToDate(Jrise), sunset: jdToDate(Jset) };
+}
+function fmtTimeLocal(d){
+  return d ? d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) : "--";
+}
+const sunLat = document.getElementById("sunLat");
+const sunLon = document.getElementById("sunLon");
+const sunDate = document.getElementById("sunDate");
+const sunriseOut = document.getElementById("sunriseOut");
+const sunsetOut = document.getElementById("sunsetOut");
+const sunDurOut = document.getElementById("sunDurOut");
+
+document.getElementById("sunUseGPS")?.addEventListener("click", ()=>{
+  if(!navigator.geolocation) return alert("GPS not supported.");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    sunLat.value = pos.coords.latitude.toFixed(4);
+    sunLon.value = pos.coords.longitude.toFixed(4);
+  }, ()=> alert("Unable to access GPS."));
+});
+
+document.getElementById("sunCalc")?.addEventListener("click", ()=>{
+  const lat = parseFloat(sunLat.value);
+  const lon = parseFloat(sunLon.value);
+  const d = sunDate.value ? new Date(sunDate.value+"T00:00:00") : new Date();
+  if (Number.isNaN(lat) || Number.isNaN(lon)) return alert("Enter latitude and longitude.");
+  // Use UTC date for calculation, then display local
+  const res = sunTimesForDate(lat, lon, new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())));
+  if(!res){ sunriseOut.textContent = "--"; sunsetOut.textContent = "--"; sunDurOut.textContent = "Polar day/night"; return; }
+  sunriseOut.textContent = fmtTimeLocal(res.sunrise);
+  sunsetOut.textContent  = fmtTimeLocal(res.sunset);
+  const durMs = res.sunset - res.sunrise;
+  const hrs = Math.floor(durMs/3600000), mins = Math.round((durMs%3600000)/60000);
+  sunDurOut.textContent = `${hrs}h ${mins}m`;
+});
+
+
+// ===== Water Purification Calculator =====
+function feetToMeters(ft){ return ft * 0.3048; }
+function galToLiters(g){ return g * 3.785411784; }
+function mlToLiters(ml){ return ml / 1000; }
+
+document.getElementById("purifyCalc")?.addEventListener("click", ()=>{
+  const altV = parseFloat(document.getElementById("altValue").value);
+  const altU = document.getElementById("altUnit").value;
+  const volV = parseFloat(document.getElementById("volValue").value);
+  const volU = document.getElementById("volUnit").value;
+  const out = document.getElementById("purifyOut");
+
+  if (Number.isNaN(altV) || Number.isNaN(volV)) { out.textContent = "Enter altitude and volume."; return; }
+
+  // Normalize
+  const altitude_m = altU === "m" ? altV : feetToMeters(altV);
+  let liters;
+  if (volU === "L") liters = volV;
+  else if (volU === "mL") liters = mlToLiters(volV);
+  else liters = galToLiters(volV);
+
+  // Boiling point (approx) and boil guidance
+  // Simple rule: 1 min rolling boil at low altitude; 3 min above ~2000 m (≈ 6,562 ft)
+  const boilMinutes = altitude_m >= 2000 ? 3 : 1;
+
+  // Tablet dosing (typical chlorine dioxide: 1 tablet / 1 L). Round up.
+  const tablets = Math.max(1, Math.ceil(liters));
+
+  out.innerHTML = `
+    <div><b>Volume:</b> ${liters.toFixed(2)} L</div>
+    <div><b>Boil time:</b> ${boilMinutes} minute(s) at rolling boil</div>
+    <div><b>Tablet dose (typical):</b> ${tablets} tablet(s)</div>
+    <div class="muted" style="margin-top:6px;">Always follow product label; cloudy water needs longer contact time/filtration.</div>
+  `;
+});
+
+
+// ===== Knot Guide =====
+const KNOTS = {
+  bowline: [
+    "Make a small loop (the rabbit hole) near the end.",
+    "Pass the working end up through the loop (the rabbit comes out).",
+    "Wrap it around the standing part (around the tree).",
+    "Pass it back down the loop (back into the hole) and tighten."
+  ],
+  clove: [
+    "Wrap the rope around the post once.",
+    "Cross over the standing part and wrap around again.",
+    "Tuck the working end under the last wrap and snug tight."
+  ],
+  square: [
+    "Left end over right end and under (first overhand).",
+    "Right end over left end and under (second overhand).",
+    "Tighten both standing parts; ends exit same side."
+  ]
+};
+const knotSelect = document.getElementById("knotSelect");
+const knotSteps = document.getElementById("knotSteps");
+function renderKnot(id){
+  const steps = KNOTS[id] || [];
+  knotSteps.innerHTML = steps.map(s=>`<li>${s}</li>`).join("");
+}
+knotSelect?.addEventListener("change", ()=> renderKnot(knotSelect.value));
+renderKnot("bowline");
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ---------- Back button ----------
 document.getElementById("navBack").addEventListener("click", ()=>{
   history.length > 1 ? history.back() : showView("home");
 });

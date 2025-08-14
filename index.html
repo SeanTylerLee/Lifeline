@@ -16,7 +16,7 @@
 </head>
 <body class="app">
 
-  <!-- App header (compact iOS style) -->
+  <!-- App header -->
   <header class="topbar">
     <button class="icon-btn" id="navBack" aria-label="Back">
       <img src="images/icon-back.png" alt="" />
@@ -30,9 +30,8 @@
     </button>
   </header>
 
-  <!-- Main view stack -->
   <main id="viewRoot">
-    <!-- ===== Home (Dashboard) ===== -->
+    <!-- ===== Home ===== -->
     <section data-view="home" class="view active">
       <div class="hero">
         <img src="images/lifeline-logo.png" alt="LifeLine" class="hero-logo"/>
@@ -42,6 +41,7 @@
           <a class="pill" href="#guides">Guides</a>
           <a class="pill" href="#checklists">Checklists</a>
           <a class="pill" href="#library">Library</a>
+          <a class="pill" href="#tools">Tools</a>
         </div>
       </div>
 
@@ -62,7 +62,7 @@
       </div>
     </section>
 
-    <!-- ===== Guides (categorized, searchable) ===== -->
+    <!-- ===== Guides ===== -->
     <section data-view="guides" class="view">
       <div class="section-header">
         <h2>Guides</h2>
@@ -72,7 +72,7 @@
       <div id="guideList" class="accordion"></div>
     </section>
 
-    <!-- ===== Checklists (Go-bag, Home kit, Vehicle) ===== -->
+    <!-- ===== Checklists ===== -->
     <section data-view="checklists" class="view">
       <div class="section-header">
         <h2>Checklists</h2>
@@ -81,7 +81,7 @@
       <div id="checklistWrap" class="checklists"></div>
     </section>
 
-    <!-- ===== Library (all tips) ===== -->
+    <!-- ===== Library ===== -->
     <section data-view="library" class="view">
       <div class="section-header">
         <h2>Library</h2>
@@ -90,7 +90,225 @@
       <ul id="libraryList" class="list large"></ul>
     </section>
 
-    <!-- ===== Tip detail drawer ===== -->
+    <!-- ===== Tools Hub ===== -->
+    <section data-view="tools" class="view">
+      <div class="section-header">
+        <h2>Tools</h2>
+        <button id="openPacks" class="small ghost">Content Packs</button>
+      </div>
+      <div class="tools-grid">
+  <a href="#tool-compass" class="tool-card">🧭<span>Compass</span></a>
+  <a href="#tool-converter" class="tool-card">🔁<span>Converter</span></a>
+  <a href="#tool-morse" class="tool-card">• --<span>Morse</span></a>
+  <a href="#tool-sos" class="tool-card">🆘<span>SOS Beacon</span></a>
+  <a href="#tool-cpr" class="tool-card">❤️<span>CPR</span></a>
+  <a href="#tool-sun" class="tool-card">🌅<span>Sun Times</span></a>
+  <a href="#tool-watercalc" class="tool-card">💧<span>Water Calc</span></a>
+  <a href="#tool-knots" class="tool-card">🪢<span>Knot Guide</span></a>
+  <a href="#tool-ice" class="tool-card">📇<span>ICE Card</span></a>
+</div>
+      <div class="card muted" style="margin-top:12px;">
+        Tip: enable screen brightness for signaling tools. Torch control may not be supported on all devices/browsers--screen flash & audio still work offline.
+      </div>
+    </section>
+
+    <!-- ===== Tool: Compass ===== -->
+    <section data-view="tool-compass" class="view">
+      <div class="section-header"><h2>Compass</h2></div>
+      <div class="card center">
+        <div id="compassDial" class="compass">
+          <div id="compassNeedle" class="needle"></div>
+          <div class="north">N</div>
+        </div>
+        <div class="heading-row">
+          <div id="headingDeg" class="heading">--°</div>
+          <div id="headingCard" class="muted">Waiting…</div>
+        </div>
+        <button id="compassEnable" class="pill" style="margin-top:10px;">Enable Compass</button>
+        <p class="muted" style="margin-top:8px;">If the heading doesn’t move, tap "Enable Compass" (iOS requires a tap).</p>
+      </div>
+    </section>
+
+    <!-- ===== Tool: Converter ===== -->
+    <section data-view="tool-converter" class="view">
+      <div class="section-header"><h2>Unit Converter</h2></div>
+      <div class="card">
+        <div class="conv-row">
+          <label>Category</label>
+          <select id="convCategory">
+            <option value="length">Length</option>
+            <option value="weight">Weight</option>
+            <option value="volume">Volume</option>
+            <option value="temp">Temperature</option>
+            <option value="speed">Speed</option>
+            <option value="fuel">Fuel Economy</option>
+          </select>
+        </div>
+        <div class="conv-grid">
+          <div>
+            <label>From</label>
+            <input id="convFromVal" type="number" inputmode="decimal" value="1" />
+            <select id="convFromUnit"></select>
+          </div>
+          <div class="swap-wrap">
+            <button id="convSwap" class="pill">⇄</button>
+          </div>
+          <div>
+            <label>To</label>
+            <input id="convToVal" type="number" inputmode="decimal" value="1" />
+            <select id="convToUnit"></select>
+          </div>
+        </div>
+        <div id="convResult" class="conv-result">= 1</div>
+      </div>
+    </section>
+
+    <!-- ===== Tool: Morse ===== -->
+    <section data-view="tool-morse" class="view">
+      <div class="section-header"><h2>Morse Code</h2></div>
+      <div class="card">
+        <label>Text</label>
+        <textarea id="morseText" rows="4" placeholder="Type message…"></textarea>
+        <div class="btn-row">
+          <button id="morseEncode" class="pill">Encode →</button>
+          <button id="morseDecode" class="pill">← Decode</button>
+        </div>
+        <label>Morse</label>
+        <textarea id="morseDots" rows="4" placeholder="• = dot, -- = dash; use spaces between letters, / between words"></textarea>
+
+        <div class="controls">
+          <label>Speed (ms per dot)</label>
+          <input id="morseSpeed" type="range" min="80" max="300" value="180" />
+          <div class="toggles">
+            <label><input type="checkbox" id="morseSound" checked> Sound</label>
+            <label><input type="checkbox" id="morseScreen" checked> Screen flash</label>
+            <label><input type="checkbox" id="morseVibe"> Vibrate</label>
+          </div>
+          <div class="btn-row">
+            <button id="morsePlay" class="pill">Play</button>
+            <button id="morseStop" class="pill">Stop</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Tool: SOS ===== -->
+    <section data-view="tool-sos" class="view">
+      <div class="section-header"><h2>SOS Beacon</h2></div>
+      <div class="card center">
+        <div class="controls">
+          <label>Speed (ms per dot)</label>
+          <input id="sosSpeed" type="range" min="80" max="300" value="160" />
+          <div class="toggles">
+            <label><input type="checkbox" id="sosSound" checked> Sound</label>
+            <label><input type="checkbox" id="sosScreen" checked> Screen flash</label>
+            <label><input type="checkbox" id="sosVibe"> Vibrate</label>
+          </div>
+        </div>
+        <button id="sosToggle" class="sos-btn">Start SOS</button>
+        <p class="muted" style="margin-top:8px;">Pattern repeats: <b>… -- -- -- …</b></p>
+      </div>
+    </section>
+    
+<!-- ===== Tool: CPR Metronome ===== -->
+<section data-view="tool-cpr" class="view">
+  <div class="section-header"><h2>CPR Metronome</h2></div>
+  <div class="card center">
+    <div class="cpr-big" id="cprBpmRead">110 BPM</div>
+    <input id="cprBpm" type="range" min="100" max="120" value="110" />
+    <div class="muted" style="margin:6px 0 10px;">Recommended: 100–120 compressions/min</div>
+    <div class="btn-row">
+      <button id="cprStart" class="pill">Start</button>
+      <button id="cprStop" class="pill">Stop</button>
+    </div>
+    <div class="muted">Cycle helper: 30 compressions : 2 breaths</div>
+  </div>
+</section>
+
+<!-- ===== Tool: Sunrise / Sunset ===== -->
+<section data-view="tool-sun" class="view">
+  <div class="section-header"><h2>Sunrise / Sunset</h2></div>
+  <div class="card">
+    <div class="sun-grid">
+      <div>
+        <label>Latitude</label>
+        <input id="sunLat" type="number" step="0.0001" placeholder="e.g., 41.256" />
+      </div>
+      <div>
+        <label>Longitude</label>
+        <input id="sunLon" type="number" step="0.0001" placeholder="-95.934" />
+      </div>
+      <div>
+        <label>Date</label>
+        <input id="sunDate" type="date" />
+      </div>
+      <div class="sun-actions">
+        <button id="sunUseGPS" class="pill small">Use GPS</button>
+        <button id="sunCalc" class="pill small">Calculate</button>
+      </div>
+    </div>
+    <div class="sun-out">
+      <div><b>Sunrise:</b> <span id="sunriseOut">--</span></div>
+      <div><b>Sunset:</b> <span id="sunsetOut">--</span></div>
+      <div><b>Daylight:</b> <span id="sunDurOut">--</span></div>
+    </div>
+    <p class="muted" style="margin-top:8px;">Works fully offline using the NOAA solar equation (approximate).</p>
+  </div>
+</section>
+
+<!-- ===== Tool: Water Purification Calculator ===== -->
+<section data-view="tool-water" class="view">
+  <div class="section-header"><h2>Water Purification</h2></div>
+  <div class="card">
+    <div class="conv-grid">
+      <div>
+        <label>Altitude</label>
+        <input id="altValue" type="number" inputmode="decimal" placeholder="e.g., 2000" />
+        <select id="altUnit">
+          <option value="ft">ft</option>
+          <option value="m">m</option>
+        </select>
+      </div>
+      <div>
+        <label>Volume</label>
+        <input id="volValue" type="number" inputmode="decimal" placeholder="e.g., 3" />
+        <select id="volUnit">
+          <option value="L">L</option>
+          <option value="mL">mL</option>
+          <option value="gal">gal</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:10px;">
+      <button id="purifyCalc" class="pill">Calculate</button>
+    </div>
+    <div id="purifyOut" class="conv-result" style="margin-top:8px;">--</div>
+    <p class="muted" style="margin-top:8px;">
+      Guidance: rolling boil for 1 minute (3 minutes &gt; 6,500 ft / 2,000 m). Chlorine dioxide tablets: typically 1 tab per 1 L. Verify product label.
+    </p>
+  </div>
+</section>
+
+<!-- ===== Tool: Knot Guide ===== -->
+<section data-view="tool-knots" class="view">
+  <div class="section-header"><h2>Knot Guide</h2></div>
+  <div class="card">
+    <label>Choose a knot</label>
+    <select id="knotSelect">
+      <option value="bowline">Bowline</option>
+      <option value="clove">Clove Hitch</option>
+      <option value="square">Square Knot (Reef)</option>
+    </select>
+
+    <ol id="knotSteps" class="knot-steps"></ol>
+
+    <p class="muted" style="margin-top:6px;">Offline quick steps. (Add photos/animations later if you want.)</p>
+  </div>
+</section>
+
+    
+
+    <!-- ===== Tip Drawer ===== -->
     <aside id="tipDrawer" class="drawer">
       <header class="drawer-head">
         <h3 id="tipTitle">Tip</h3>
@@ -103,7 +321,7 @@
       </footer>
     </aside>
 
-    <!-- ===== Note modal ===== -->
+    <!-- ===== Note Modal ===== -->
     <dialog id="noteDialog" class="modal">
       <form method="dialog" class="modal-card" id="noteForm">
         <h3>Personal Note</h3>
@@ -115,7 +333,7 @@
       </form>
     </dialog>
 
-    <!-- ===== Packs Manager ===== -->
+    <!-- ===== Content Packs Dialog ===== -->
     <dialog id="packsDialog" class="modal">
       <div class="modal-card">
         <h3 style="margin-bottom:6px;">Content Packs</h3>
@@ -128,7 +346,7 @@
     </dialog>
   </main>
 
-  <!-- Bottom nav (fixed) -->
+  <!-- Bottom nav -->
   <nav class="bottomnav">
     <a href="#home" class="nav-item active" data-tab="home">
       <img src="images/icon-home.png" alt="" /><span>Home</span>
@@ -141,6 +359,9 @@
     </a>
     <a href="#library" class="nav-item" data-tab="library">
       <img src="images/icon-menu.png" alt="" /><span>Library</span>
+    </a>
+    <a href="#tools" class="nav-item" data-tab="tools">
+      <img src="images/icon-gear.png" alt="" /><span>Tools</span>
     </a>
   </nav>
 
