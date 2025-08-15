@@ -587,3 +587,281 @@ $('#weatherGet')?.addEventListener('click', getWeather);
 
 // ========== start on grid ==========
 showGrid();
+
+
+
+
+/* =========================
+   Shelter Planner
+========================= */
+
+// --- Tabs ---
+(function shelterTabs(){
+  const tabsWrap = document.getElementById('shTabs');
+  if (!tabsWrap) return;
+  tabsWrap.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.tab'); if(!btn) return;
+    tabsWrap.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    const id = btn.dataset.tab;
+    ['advisor','tarp','calc','check'].forEach(k=>{
+      document.getElementById('shTab-'+k).classList.toggle('hidden', k!==id);
+    });
+  });
+})();
+
+// --- Advisor: "Use GPS Weather" (Open-Meteo online, cached offline) ---
+document.getElementById('shUseWeather')?.addEventListener('click', ()=>{
+  if (!navigator.geolocation) return alert('GPS not supported.');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const { latitude, longitude } = pos.coords;
+    try{
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,wind_speed_10m,precipitation`;
+      const r = await fetch(url, { cache:'no-store' }); const j = await r.json();
+      const c = j.current;
+      document.getElementById('shTemp').value = (c.temperature_2m).toFixed(1);
+      document.getElementById('shWind').value = (c.wind_speed_10m).toFixed(1);
+      // rough precip mapping
+      document.getElementById('shPrec').value = c.precipitation>0 ? (c.temperature_2m<=0? 'snow':'rain') : 'none';
+      localStorage.setItem('sh_last_weather', JSON.stringify({t:Date.now(), temp:c.temperature_2m, wind:c.wind_speed_10m}));
+    }catch(e){
+      const last = JSON.parse(localStorage.getItem('sh_last_weather')||'null');
+      if(last){
+        document.getElementById('shTemp').value = last.temp.toFixed(1);
+        document.getElementById('shWind').value = last.wind.toFixed(1);
+      }else{
+        alert('Offline and no cached weather.');
+      }
+    }
+  }, ()=> alert('GPS denied.'));
+});
+
+// live label for hours-to-dark slider
+document.getElementById('shDark')?.addEventListener('input', e=>{
+  document.getElementById('shDarkRead').textContent = `${e.target.value}h`;
+});
+
+// --- Advisor Decision Engine ---
+document.getElementById('shPlanBtn')?.addEventListener('click', ()=>{
+  const T = parseFloat(document.getElementById('shTemp').value || 'NaN');     // °C
+  const W = parseFloat(document.getElementById('shWind').value || '0');       // m/s
+  const prec   = document.getElementById('shPrec').value;
+  const ground = document.getElementById('shGround').value;
+  const cover  = document.getElementById('shCover').value;
+  const hours  = parseFloat(document.getElementById('shDark').value || '0');
+
+  const gear = {
+    tarp:  document.getElementById('gearTarp').checked,
+    bivy:  document.getElementById('gearBivy').checked,
+    shovel:document.getElementById('gearShovel').checked,
+    poncho:document.getElementById('gearPoncho').checked,
+    cord:  parseFloat(document.getElementById('gearCord').value || '0'),
+    stakes:parseInt(document.getElementById('gearStakes').value || '0',10)
+  };
+  const team = parseInt(document.getElementById('shTeam').value || '1',10);
+
+  const out = document.getElementById('shPlanOut');
+
+  if (Number.isNaN(T)) { out.textContent='Enter temperature.'; return; }
+
+  // Normalize units
+  const wind_kmh = W * 3.6;
+
+  // Basic conditions
+  const cold = T <= 5;
+  const freezing = T <= 0;
+  const highWind = wind_kmh >= 25;
+  const rain = prec === 'rain' || prec === 'drizzle';
+  const snowing = prec === 'snow' || ground === 'snow';
+
+  // Decide shelter
+  let name = 'Windbreak + Ground Insulation';
+  let orientation = 'Back to wind; entrance on leeward side.';
+  let materials = [];
+  let steps = [];
+  let notes = [];
+
+  function need(str){ materials.push(str); }
+
+  if (snowing) {
+    if (gear.shovel) {
+      name = team>1 ? 'Snow Trench (group)' : 'Snow Trench';
+      steps = [
+        'Excavate a body-length trench below snow surface.',
+        'Roof with skis/branches/tarp; cover with 30–50 cm snow.',
+        'Vent hole & enlarge foot well; insulate floor with boughs/foam.',
+      ];
+      need('Shovel • Branches/skis • Tarp/poncho (optional)');
+      orientation = 'Parallel to wind; entrance on leeward side.';
+    } else if (gear.tarp) {
+      name = 'Plow-Point Tarp (snow)';
+      steps = [
+        'Stake one tarp corner into wind as a ground anchor.',
+        'Raise opposite corner on a pole/tree to form wedge.',
+        'Stake sides tight; seal windward skirt with snow.',
+      ];
+      need('Tarp • 4–6 stakes • 3–5 m cord');
+      orientation = 'Point into wind.';
+    } else {
+      name = 'Debris Cocoon (snow cover)';
+      steps = [
+        'Find tree well or drift lip out of wind.',
+        'Build small A-frame over you with branches.',
+        'Heap snow/debris to insulate; leave small vent.',
+      ];
+      need('Branches • Debris (duff) • Space blanket (if any)');
+    }
+  } else if (gear.tarp) {
+    if (highWind) {
+      name = 'Lean-To (low profile) + Reflector Fire';
+      steps = [
+        'Ridgeline between trees 0.8–1.0 m high.',
+        'Stake tarp steeply toward ground (back to wind).',
+        'Add side wings or brush to block crosswind.',
+      ];
+      need('Tarp • 6–8 stakes • 8–12 m cord');
+    } else if (rain) {
+      name = 'A-Frame (rain)';
+      steps = [
+        'Ridgeline 1–1.2 m; center tarp over line.',
+        'Stake both sides evenly for drip-lines.',
+        'Pitch low if wind picks up.',
+      ];
+      need('Tarp • 6 stakes • 8–10 m cord');
+    } else {
+      name = 'Half Pyramid (storm-worthy)';
+      steps = [
+        'Stake rear edge and two rear corners.',
+        'Prop front corner on pole/branch; guyline forward.',
+        'Stake remaining edges tight.',
+      ];
+      need('Tarp • 6–8 stakes • 6–8 m cord');
+    }
+    orientation = 'Back to wind; slope faces away from wind. Avoid depressions.';
+  } else if (cover === 'forest') {
+    name = 'Debris Hut';
+    steps = [
+      'Ridgepole from crotch of branch or bipod.',
+      'Lean ribs to form a narrow A-frame (just wider than shoulders).',
+      'Heap 45+ cm leaves/duff for insulation; add doorway plug.',
+    ];
+    need('Branches • Lots of leaf litter / duff • Cord (optional)');
+    orientation = 'Entrance leeward. Slightly upslope for drainage.';
+  } else {
+    name = 'Improvised Windbreak';
+    steps = [
+      'Find natural berm, rocks, or fallen log as back-stop.',
+      'Stack branches/snow against wind side.',
+      'Insulate ground with boughs/pack/foam; curl up small.',
+    ];
+    need('Branches • Debris • Space blanket (if any)');
+  }
+
+  if (cold) notes.push('Keep shelter volume small to trap heat.');
+  if (rain) notes.push('Avoid low spots and dry washes; watch for pooling.');
+  if (freezing) notes.push('Avoid metal contact; warm core first.');
+
+  if (hours <= 1) notes.push('Time short: prioritize wind block + ground insulation first.');
+
+  const html = `
+    <h3>${name}</h3>
+    <div><b>Orientation:</b> ${orientation}</div>
+    <div style="margin-top:6px;"><b>Materials:</b> ${materials.join(' • ') || 'Any natural materials available'}</div>
+    <ol class="knot-steps" style="margin-top:8px;">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    ${notes.length? `<div class="muted" style="margin-top:6px;">${notes.join(' ')}<br/>Site: above low spots; avoid dead limbs ("widowmakers").</div>` : ''}
+  `;
+  out.innerHTML = html;
+});
+
+// --- Tarp Guide data ---
+const TARP = {
+  aframe: {
+    meta: 'Rain-proof, good ventilation. Stakes: 6 • Cord: ~8–10 m',
+    steps: [
+      'Run ridgeline between trees ~1–1.2 m high.',
+      'Center tarp over line; clip or tie center.',
+      'Stake both sides evenly; tension for clean drip-lines.'
+    ]
+  },
+  leanto: {
+    meta: 'Wind shedding. Great with reflector fire. Stakes: 6–8 • Cord: ~8–12 m',
+    steps: [
+      'Ridgeline ~0.8–1.0 m, back to the wind.',
+      'Stake rear low and tight; front higher for headroom.',
+      'Add side "wings" or brush if crosswind.'
+    ]
+  },
+  plow: {
+    meta: 'Storm wedge; small footprint. Stakes: 4–6 • Cord: ~3–5 m',
+    steps: [
+      'Stake one tarp corner into the wind.',
+      'Lift opposite corner on pole/branch; guy forward.',
+      'Stake remaining corners tight; close windward skirts.'
+    ]
+  },
+  half: {
+    meta: 'Strong, 3-sided. Stakes: 6–8 • Cord: ~6–8 m',
+    steps: [
+      'Stake rear edge and two rear corners.',
+      'Raise front corner on pole; guyline forward.',
+      'Stake remaining edges; adjust for headroom.'
+    ]
+  }
+};
+function renderTarp(){
+  const style = document.getElementById('tarpStyle').value;
+  document.getElementById('tarpMeta').textContent = TARP[style].meta;
+  document.getElementById('tarpSteps').innerHTML = TARP[style].steps.map(s=>`<li>${s}</li>`).join('');
+}
+document.getElementById('tarpStyle')?.addEventListener('change', renderTarp);
+renderTarp();
+
+// --- Calculators: Wind chill (°C, km/h) ---
+document.getElementById('wcBtn')?.addEventListener('click', ()=>{
+  const T = parseFloat(document.getElementById('wcTemp').value || 'NaN');   // °C
+  const V = parseFloat(document.getElementById('wcWind').value || '0');     // km/h
+  const out = document.getElementById('wcOut');
+  if (Number.isNaN(T)) { out.textContent='Enter temperature.'; return; }
+  const v = Math.max(V, 5); // formula defined ≥ 5 km/h
+  const wci = 13.12 + 0.6215*T - 11.37*Math.pow(v,0.16) + 0.3965*T*Math.pow(v,0.16);
+  let risk = 'Low';
+  if (wci <= -10) risk = 'Moderate';
+  if (wci <= -28) risk = 'High (exposed skin can freeze in ≤30–60 min)';
+  if (wci <= -40) risk = 'Very High (≤10–30 min)';
+  if (wci <= -48) risk = 'Extreme (≤5–10 min)';
+  out.textContent = `Feels like: ${wci.toFixed(1)} °C • Risk: ${risk}`;
+});
+
+// --- Checklist (persisted) ---
+const SH_ITEMS_DEFAULT = [
+  'Above low spots / not in a drainage',
+  'No dead limbs ("widowmakers") above',
+  'Leeward side of wind',
+  'Dry ground or build a platform',
+  'Fuel supply nearby (if using fire)',
+  'Water source nearby but not beside it (≥60 m)',
+  'Leave-No-Trace: minimal impact and easy to restore'
+];
+function renderShChecklist(){
+  const wrap = document.getElementById('shChecklist'); if(!wrap) return;
+  const saved = JSON.parse(localStorage.getItem('lifeline_sh_check') || 'null') || SH_ITEMS_DEFAULT.map(t=>({t,done:false}));
+  wrap.innerHTML = '';
+  saved.forEach((item, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'check-row';
+    row.innerHTML = `<label class="chk"><input type="checkbox" ${item.done?'checked':''} data-idx="${idx}"> ${item.t}</label>`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const list = JSON.parse(localStorage.getItem('lifeline_sh_check') || 'null') || SH_ITEMS_DEFAULT.map(t=>({t,done:false}));
+      list[parseInt(cb.dataset.idx,10)].done = cb.checked;
+      localStorage.setItem('lifeline_sh_check', JSON.stringify(list));
+    });
+  });
+}
+renderShChecklist();
+document.getElementById('shChecklistReset')?.addEventListener('click', ()=>{
+  localStorage.removeItem('lifeline_sh_check');
+  renderShChecklist();
+});

@@ -298,12 +298,149 @@
     </section>
 
     <!-- SHELTER -->
-    <section id="sec-shelter" class="tool-section hidden">
-      <div class="section-head">
-        <button class="back-btn">← Tools</button><h2>Shelter</h2>
+<section id="sec-shelter" class="tool-section hidden">
+  <div class="section-head">
+    <button class="back-btn">← Tools</button><h2>Shelter</h2>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="shTabs">
+    <button class="tab active" data-tab="advisor">Advisor</button>
+    <button class="tab" data-tab="tarp">Tarp Guide</button>
+    <button class="tab" data-tab="calc">Calculators</button>
+    <button class="tab" data-tab="check">Checklist</button>
+  </div>
+
+  <!-- === Advisor === -->
+  <div class="tab-panel" id="shTab-advisor">
+    <div class="grid-2">
+      <div>
+        <label>Air temperature (°C)</label>
+        <input id="shTemp" type="number" step="0.1" placeholder="e.g., 5" />
       </div>
-      <p>Rule of 3s: 3 hours w/out shelter. Pick site above low spots, away from dead limbs, near resources.</p>
-    </section>
+      <div>
+        <label>Wind (m/s)</label>
+        <input id="shWind" type="number" step="0.1" placeholder="e.g., 4" />
+      </div>
+      <div>
+        <label>Precipitation</label>
+        <select id="shPrec">
+          <option value="none">None</option>
+          <option value="drizzle">Drizzle</option>
+          <option value="rain">Rain</option>
+          <option value="snow">Snow</option>
+        </select>
+      </div>
+      <div>
+        <label>Ground</label>
+        <select id="shGround">
+          <option value="dry">Dry</option>
+          <option value="damp">Damp</option>
+          <option value="wet">Wet</option>
+          <option value="snow">Snow</option>
+        </select>
+      </div>
+      <div>
+        <label>Tree cover</label>
+        <select id="shCover">
+          <option value="none">Open</option>
+          <option value="sparse">Sparse</option>
+          <option value="forest">Forest</option>
+        </select>
+      </div>
+      <div>
+        <label>Until dark (hours)</label>
+        <input id="shDark" type="range" min="0" max="6" value="2" />
+        <div class="muted" id="shDarkRead">2h</div>
+      </div>
+    </div>
+
+    <fieldset class="gear">
+      <legend>Gear</legend>
+      <label class="chk"><input type="checkbox" id="gearTarp"> Tarp / Poncho</label>
+      <label class="chk"><input type="checkbox" id="gearBivy"> Bivy / Space blanket</label>
+      <label class="chk"><input type="checkbox" id="gearShovel"> Shovel</label>
+      <label class="chk"><input type="checkbox" id="gearPoncho"> Rain jacket</label>
+      <div class="grid-2">
+        <div>
+          <label>Cord (m)</label>
+          <input id="gearCord" type="number" step="0.5" value="10" />
+        </div>
+        <div>
+          <label>Stakes</label>
+          <input id="gearStakes" type="number" value="6" />
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="grid-2">
+      <div>
+        <label>Team size</label>
+        <input id="shTeam" type="number" value="1" min="1" />
+      </div>
+      <div class="btn-row">
+        <button id="shUseWeather" class="pill small">Use GPS Weather</button>
+        <button id="shPlanBtn" class="pill">Get Plan</button>
+      </div>
+    </div>
+
+    <div class="card muted" style="margin-top:10px;">
+      <div id="shPlanOut"><i>Fill the fields and tap "Get Plan".</i></div>
+    </div>
+  </div>
+
+  <!-- === Tarp Guide === -->
+  <div class="tab-panel hidden" id="shTab-tarp">
+    <div class="grid-2">
+      <div>
+        <label>Tarp pitch</label>
+        <select id="tarpStyle">
+          <option value="aframe">A-Frame</option>
+          <option value="leanto">Lean-To</option>
+          <option value="plow">Plow Point</option>
+          <option value="half">Half Pyramid</option>
+        </select>
+      </div>
+      <div>
+        <label>Wind from</label>
+        <select id="tarpWind">
+          <option value="N">N</option><option value="NE">NE</option><option value="E">E</option><option value="SE">SE</option>
+          <option value="S">S</option><option value="SW">SW</option><option value="W">W</option><option value="NW">NW</option>
+        </select>
+      </div>
+    </div>
+    <div id="tarpMeta" class="muted" style="margin:6px 0;"></div>
+    <ol id="tarpSteps" class="knot-steps"></ol>
+  </div>
+
+  <!-- === Calculators === -->
+  <div class="tab-panel hidden" id="shTab-calc">
+    <div class="card">
+      <h3>Wind Chill</h3>
+      <div class="grid-2">
+        <div><label>Temp (°C)</label><input id="wcTemp" type="number" step="0.1" /></div>
+        <div><label>Wind (km/h)</label><input id="wcWind" type="number" step="0.1" /></div>
+      </div>
+      <div class="btn-row"><button id="wcBtn" class="pill">Calculate</button></div>
+      <div id="wcOut" class="result-box">--</div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3>Ground Insulation Tip</h3>
+      <p class="muted">
+        Stay off cold ground. Aim for pad R-value ≈ <b>(10 − T/10)</b> for freezing conditions (rule of thumb). Add debris/duff under you.
+      </p>
+    </div>
+  </div>
+
+  <!-- === Checklist === -->
+  <div class="tab-panel hidden" id="shTab-check">
+    <div id="shChecklist" class="checklist"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button id="shChecklistReset" class="pill small">Reset</button>
+    </div>
+  </div>
+</section>
 
     <!-- PLANTS -->
     <section id="sec-plants" class="tool-section hidden">
